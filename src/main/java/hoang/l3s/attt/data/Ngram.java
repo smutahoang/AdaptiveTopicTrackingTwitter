@@ -1,136 +1,106 @@
 package hoang.l3s.attt.data;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class Ngram {
 	private int n;
 	private List<String> centenceList;
 
-	public List<CountModel> preCountsModelList;
-	public List<CountModel> countsModelList;
+	private HashMap<String, Double> existedPreWordCountsMap;
+	private HashMap<String, HashMap<String, Double>> existedWordCountsMap;
 
 	public Ngram(List<String> centenceList, int n) {
 		this.centenceList = centenceList;
 		this.n = n;
 	}
 
-	public int containsTerm(List<CountModel> countsList, List<String> list) {
-		boolean contain = false;
-		int index = 0;
-
-		for (int i = 0; i < countsList.size(); i++) {
-			CountModel count = countsList.get(i);
-			int j = 0;
-			for (j = 0; j < list.size(); j++) {
-				if (!count.words.get(j).equals(list.get(j))) {
-					break;
-				}
-			}
-			if (j == list.size()) {
-				contain = true;
-				index = i;
-			}
-		}
-
-		if (contain) {
-			return index;
-		} else {
-			return -1;
-		}
-	}
-
-	public void getCountModelList(String[] wordsArr, int count, List<CountModel> modelList) {
+	public void getCountsMap(String[] wordsArr, int count) {
 
 		for (int j = 0; j < wordsArr.length - (count - 1); j++) {
-			List<String> wordList = new ArrayList<String>();
-			for (int k = 0; k < count; k++) {
-				wordList.add(wordsArr[j + k]);
-			}
+			StringBuffer preWord = new StringBuffer("");
 
-			int index = containsTerm(modelList, wordList);
-			if (index != -1) {
-				CountModel countModel = modelList.get(index);
-				countModel.count++;
+			int k = 0;
+			for (k = 0; k < count - 1; k++) {
+				preWord.append(wordsArr[j + k] + " ");
+			}
+			String term = wordsArr[j + k];
+
+			if (existedPreWordCountsMap.containsKey(preWord.toString())) {
+				double preCnt = existedPreWordCountsMap.get(preWord.toString());
+				existedPreWordCountsMap.put(preWord.toString(), preCnt + 1.0);
+
+				HashMap<String,Double> termCountMap = existedWordCountsMap.get(preWord.toString());
+				if(termCountMap != null) {
+					Set<String> keys = termCountMap.keySet();
+					Iterator<String> iter = keys.iterator();
+					boolean find = false;
+					while (iter.hasNext()) {
+						String aTerm = iter.next();
+						if (aTerm.equals(term)) {
+							double cnt = termCountMap.get(term);
+							termCountMap.put(term, cnt + 1.0);
+							find = true;
+							break;
+						}
+					}
+					if(!find) {
+						termCountMap.put(term, 1.0);
+					}
+				}else {
+					termCountMap = new HashMap<String,Double>();
+					termCountMap.put(term, 1.0);
+				}
+				existedWordCountsMap.put(preWord.toString(), termCountMap);	
 			} else {
-				CountModel countModel = new CountModel();
-				countModel.words = wordList;
-				countModel.count = 1;
-				modelList.add(countModel);
+				existedPreWordCountsMap.put(preWord.toString(), 1.0);
+				
+				HashMap<String,Double> termCountMap = new HashMap<String,Double>();
+				termCountMap.put(term, 1.0);
+				existedWordCountsMap.put(preWord.toString(), termCountMap);
 			}
 		}
 	}
 
 	public void getCount() {
-		preCountsModelList = new ArrayList<CountModel>();
-		countsModelList = new ArrayList<CountModel>();
+		existedPreWordCountsMap = new HashMap<String, Double>();
+		existedWordCountsMap = new HashMap<String, HashMap<String, Double>>();
 
 		for (int i = 0; i < this.centenceList.size(); i++) {
 			String centence = this.centenceList.get(i);
 			String wordsArr[] = centence.split(" ");
-
-			getCountModelList(wordsArr, this.n - 1, preCountsModelList);
-			getCountModelList(wordsArr, this.n, countsModelList);
-		}
-
-		/*
-		System.out.println("================");
-		for (int i = 0; i < preCountsModelList.size(); i++) {
-			CountModel countModel = preCountsModelList.get(i);
-			List<String> list = countModel.words;
-			for (int j = 0; j < list.size(); j++) {
-				System.out.print(list.get(j) + ",");
-			}
-			System.out.println("count:" + countModel.count);
-		}
-		System.out.println("***************");
-		for (int i = 0; i < countsModelList.size(); i++) {
-			CountModel countModel = countsModelList.get(i);
-			List<String> list = countModel.words;
-			for (int j = 0; j < list.size(); j++) {
-				System.out.print(list.get(j) + ",");
-			}
-			System.out.println("count:" + countModel.count);
-		}
-		*/
-	}
-
-	public String getTerm(List<String> preWordList,List<String> wordList) {
-		int i = 0;
-		for(i = 0; i < preWordList.size(); i ++) {
-			if (!preWordList.get(i).equals(wordList.get(i))) {
-				break;
-			}	
-		}
-		if (i == preWordList.size()) {
-			return wordList.get(i);
-		}else {
-			return null;
+			getCountsMap(wordsArr, this.n);
 		}
 	}
 
 	public void getLM() {
 		System.out.println("++++++++++++++++++++++++");
 		List<LanguageModel> lmList = new ArrayList<LanguageModel>();
-		for(int i = 0; i < this.preCountsModelList.size(); i ++) {
-			for(int j = 0; j < this.countsModelList.size(); j ++) {
-				CountModel preCountModel = this.preCountsModelList.get(i);
-				CountModel countModel = this.countsModelList.get(j);
-				String term = getTerm(preCountModel.words,countModel.words);
-				if(term != null) {
-					LanguageModel lm = new LanguageModel();
-					lm.n = this.n;
-					lm.preTerm = preCountModel.words;
-					lm.term = term;
-					lm.probility = ((double)countModel.count)/preCountModel.count;
-					lmList.add(lm);
-					
-					System.out.print("n:"+this.n + "," + lm.term + "/");
-					for(int k = 0; k < preCountModel.words.size(); k ++) {
-						System.out.print(preCountModel.words.get(k)+ " ");
-					}
-					System.out.println("------pro:"+lm.probility);
-				}
+
+		Set<String> preKeys = existedPreWordCountsMap.keySet();
+		Iterator<String> preIter = preKeys.iterator();
+		while (preIter.hasNext()) {
+			String preWord = preIter.next();
+			double preCount = existedPreWordCountsMap.get(preWord);
+
+			HashMap<String, Double> termCountMap = existedWordCountsMap.get(preWord);
+			Set<String> keys = termCountMap.keySet();
+			Iterator<String> iter = keys.iterator();
+			while (iter.hasNext()) {
+				String term = iter.next();
+				double count = termCountMap.get(term);
+
+				LanguageModel lm = new LanguageModel();
+				lm.n = this.n;
+				lm.preTerm = preWord;
+				lm.term = term;
+				lm.probility = count / preCount;
+				lmList.add(lm);
+
+				System.out.println("n:" + this.n + ",P(" + lm.term + "|" + lm.preTerm +")" + " = " + count + "/" + preCount + " = " + lm.probility);
 			}
 		}
 	}
