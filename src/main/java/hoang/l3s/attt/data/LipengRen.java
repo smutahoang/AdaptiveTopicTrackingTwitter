@@ -103,13 +103,14 @@ public class LipengRen {
 			this.countTweets(file.getAbsolutePath());
 		}	
 		
-		Ngram ngram = new Ngram(this.tweetTextList,3);
+		TrainingLM ngram = new TrainingLM(this.tweetTextList,2);
 		ngram.train();
 	}
 	
 	public void test() {
 		getData();
-		Ngram ngram = new Ngram(this.tweetTextList,3);
-		ngram.train();
+
+		TrainingLM trainingLM = new TrainingLM(this.tweetTextList,1);
+		trainingLM.train();
 	}
 }

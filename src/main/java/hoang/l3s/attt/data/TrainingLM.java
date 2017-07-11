@@ -6,14 +6,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public class Ngram {
+public class TrainingLM {
 	private int n;
 	private List<String> centenceList;
 
 	private HashMap<String, Double> existedPreWordCountsMap;
 	private HashMap<String, HashMap<String, Double>> existedWordCountsMap;
-
-	public Ngram(List<String> centenceList, int n) {
+	public HashMap<String, Double> unigramCountsMap;
+	public int totalCount;
+	
+	
+	public TrainingLM(List<String> centenceList, int n) {
 		this.centenceList = centenceList;
 		this.n = n;
 	}
@@ -105,8 +108,52 @@ public class Ngram {
 		}
 	}
 
-	public void train() {
+	public void trainNgramLM() {
 		getCount();
 		getLM();
+	}
+	
+	public void trainUnigramLM() {
+		unigramCountsMap = new HashMap<String, Double>();
+
+		for (int i = 0; i < centenceList.size(); i++) {
+			String centence = centenceList.get(i);
+			String wordsArr[] = centence.split(" ");
+			int len = wordsArr.length;
+
+			for (int j = 0; j < len; j++) {
+				String word = wordsArr[j];
+				if (!unigramCountsMap.containsKey(word)) {
+					unigramCountsMap.put(word, 1.0);
+				} else {
+					double count = unigramCountsMap.get(word);
+					unigramCountsMap.put(word, count + 1.0);
+				}
+				totalCount++;
+			}
+		}
+		
+		List<LanguageModel> lmList = new ArrayList<LanguageModel>();
+		Set<String> keys = unigramCountsMap.keySet();
+		Iterator<String> iter = keys.iterator();
+		while (iter.hasNext()) {
+			String aTerm = iter.next();
+			
+			LanguageModel lm = new LanguageModel();
+			lm.n = 1;
+			lm.preTerm = null;
+			lm.term = aTerm;
+			lm.probility = unigramCountsMap.get(aTerm) / totalCount;
+			lmList.add(lm);
+			System.out.println("n:" + 1 + ",P(" + lm.term + ")" + " = " + unigramCountsMap.get(aTerm) + "/" + totalCount + " = " + lm.probility);
+		}
+	}
+	
+	public void train() {
+		if(this.n == 1) {
+			trainUnigramLM();
+		}else {
+			trainNgramLM();
+		}	
 	}
 }
