@@ -45,8 +45,16 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+<<<<<<< HEAD
 
 #private code
 data
 src/main/java/hoang/l3s/attt/model/graphbased
 src_backup
+=======
+.classpath
+.project
+target/
+.settings/org.maven.ide.eclipse.prefs
+>>>>>>> origin/master
+pom.xml
