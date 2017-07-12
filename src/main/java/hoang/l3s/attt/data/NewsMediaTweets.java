@@ -230,7 +230,7 @@ public class NewsMediaTweets {
 	}
 
 	public static void main(String[] args) {
-		// crawl();
-		getEarliestTime();
+		crawl();
+		// getEarliestTime();
 	}
 }
