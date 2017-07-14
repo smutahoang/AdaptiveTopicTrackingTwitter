@@ -45,49 +45,55 @@ public class Runner {
 	}
 
 	static void filter(String[] args) {
-		// String model = args[1];
-		// String firstTweetPath = args[2];
-		// String streamPath = args[3];
-		// String outputPath = args[4];
+		try {
+			// String model = args[1];
+			// String firstTweetPath = args[2];
+			// String streamPath = args[3];
+			// String startDate = args[4];
+			// String outputPath = args[5];
 
-		FilteringModel filteringModel = null;
+			FilteringModel filteringModel = null;
 
-		// test
-		String model = "graph";
-		String firstTweetPath = "/home/hoang/attt/data/firstTweets/travel_ban.txt";
-		String streamPath = "";
+			// test
+			String model = "graph";
+			String firstTweetPath = "/home/hoang/attt/data/firstTweets/travel_ban.txt";
+			String streamPath = "/home/hoang/attt/data/travel_ban";
+			String startDate = "2017-01-28";
+			String outputPath = "/home/hoang/attt/output";
 
-		if (model.equals("graph")) {
-			filteringModel = new GraphBasedFilter();
-		} else if (model.equals("km")) {
-			filteringModel = new KeyWordMatchingFilter();
-		} else {
-			System.out.printf("%s is not an option for filtering model\n", model);
-			System.exit(-1);
+			if (model.equals("graph")) {
+				filteringModel = new GraphBasedFilter();
+			} else if (model.equals("km")) {
+				filteringModel = new KeyWordMatchingFilter();
+			} else {
+				System.out.printf("%s is not an option for filtering model\n", model);
+				System.exit(-1);
+			}
+
+			List<Tweet> firstTweets = getFirstTweets(firstTweetPath);
+
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			TweetStream stream = new TweetStream(streamPath, dateFormat.parse(startDate));
+
+			filteringModel.init(firstTweets);
+			filteringModel.filter(stream, outputPath);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-
-		List<Tweet> firstTweets = getFirstTweets(firstTweetPath);
-		TweetStream stream = new TweetStream(streamPath);
-
-		filteringModel.init(firstTweets);
-		// filteringModel.filter(stream, outputPath);
 	}
 
 	public static void main(String[] args) {
 		// hoang.l3s.attt.data.DataExamination.main(null);
 		// hoang.l3s.attt.data.NewsMediaTweets.main(null);
-<<<<<<< HEAD
 		// hoang.l3s.attt.data.LipengRen.main(null);
 		// hoang.l3s.attt.data.GetFirstTweets.main(null);
 		filter(args);
-=======
-
-		hoang.l3s.attt.data.LipengRen ren = new hoang.l3s.attt.data.LipengRen();
-		long startTime = System.currentTimeMillis(); 
-//		ren.test();
-		 ren.main(null);
-		long endTime = System.currentTimeMillis(); 
-		System.out.println("running time： " + (endTime - startTime) + "ms");
->>>>>>> origin/master
+		// hoang.l3s.attt.data.LipengRen ren = new
+		// hoang.l3s.attt.data.LipengRen();
+		// long startTime = System.currentTimeMillis();
+		// ren.test();
+		// ren.main(null);
+		// long endTime = System.currentTimeMillis();
+		// System.out.println("running time： " + (endTime - startTime) + "ms");
 	}
 }

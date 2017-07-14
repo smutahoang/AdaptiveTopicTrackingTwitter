@@ -37,19 +37,17 @@
 			<version>3.8.2</version>
 			<scope>test</scope>
 		</dependency>
-<<<<<<< HEAD
 		<!-- https://mvnrepository.com/artifact/commons-validator/commons-validator -->
 		<dependency>
 			<groupId>commons-validator</groupId>
 			<artifactId>commons-validator</artifactId>
 			<version>1.4.0</version>
-=======
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/edu.berkeley.nlp/berkeleylm -->
 		<dependency>
 			<groupId>edu.berkeley.nlp</groupId>
 			<artifactId>berkeleylm</artifactId>
 			<version>1.1.2</version>
->>>>>>> origin/master
 		</dependency>
 	</dependencies>
 	<build>

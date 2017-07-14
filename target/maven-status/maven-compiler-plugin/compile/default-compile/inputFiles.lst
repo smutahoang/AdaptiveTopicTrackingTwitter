@@ -16,6 +16,8 @@ E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\runner\Ru
 E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\data\DataExamination.java
 E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\model\TweetStream.java
 E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\model\graphbased\AdjacentTerm.java
+E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\data\TrainingLM.java
+E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\data\LanguageModel.java
 E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\data\NewsMediaTweets.java
 E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\model\graphbased\Term.java
 E:\code\java\AdaptiveTopicTrackingTwitter\src\main\java\hoang\l3s\attt\model\pseudofeedback\PseudoFeedbackBasedFilter.java

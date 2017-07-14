@@ -134,19 +134,33 @@ public class TweetPreprocessingUtils {
 		quoteSymbols.add('\u0022');
 		// quotation mark (")
 		// quoteSymbols.add('\u0027'); // apostrophe (')
-		// quoteSymbols.add('\u00ab'); // left-pointing // double-angle // // // // //
-																					// //
-																					// //
-																					// //
-																					// //
-																					// //
-																					// //
-																					// quotation
-																					// //
-																					// //
-																					// //
-																					// //
-																					// mark
+		// quoteSymbols.add('\u00ab'); // left-pointing // double-angle // // //
+		// // // // //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// //
+			// quotation
+			// //
+			// //
+			// //
+			// //
+			// mark
 		quoteSymbols.add('\u00bb'); // right-pointing double-angle quotation
 									// mark
 		quoteSymbols.add('\u2018'); // left single quotation mark
@@ -209,131 +223,164 @@ public class TweetPreprocessingUtils {
 	}
 
 	private String removeSymbolInText(String text) {
-		char[] chars = text.toCharArray();
-		int i = 0;
-		while (i < chars.length) {
-			// System.out.printf("i = %d char = %c\n", i, chars[i]);
-			if (chars[i] == '\n') {// newline
-				chars[i] = ' ';
-				i++;
-			} else if (chars[i] == '\r') {// newline
-				chars[i] = ' ';
-				i++;
-			} else if (chars[i] == '\t') {// tab
-				chars[i] = ' ';
-				i++;
-			} else if (chars[i] == '\\') {// \n or \r or \t
-				chars[i] = ' ';
-				i++;
-				if (i < chars.length) {
-					if (chars[i] == 'n') {
-						chars[i] = ' ';
-						i++;
-					} else if (chars[i] == 'r') {
-						chars[i] = ' ';
-						i++;
-					} else if (chars[i] == 't') {
-						chars[i] = ' ';
-						i++;
-					} else {
-						// do nothing
-					}
-				}
-			} else if (quoteSymbols.contains(chars[i])) {// quote
-				chars[i] = ' ';
-				i++;
-				if (chars[i] == 's') {// 's
-					if (i < chars.length - 1) {
-						if (!Character.isLetterOrDigit(chars[i + 1])) {
+		try {
+			char[] chars = text.toCharArray();
+			int i = 0;
+			while (i < chars.length) {
+				// System.out.printf("i = %d char = %c\n", i, chars[i]);
+				if (chars[i] == '\n') {// newline
+					chars[i] = ' ';
+					i++;
+				} else if (chars[i] == '\r') {// newline
+					chars[i] = ' ';
+					i++;
+				} else if (chars[i] == '\t') {// tab
+					chars[i] = ' ';
+					i++;
+				} else if (chars[i] == '\\') {// \n or \r or \t
+					chars[i] = ' ';
+					i++;
+					if (i < chars.length) {
+						if (chars[i] == 'n') {
 							chars[i] = ' ';
 							i++;
+						} else if (chars[i] == 'r') {
+							chars[i] = ' ';
+							i++;
+						} else if (chars[i] == 't') {
+							chars[i] = ' ';
+							i++;
+						} else {
+							// do nothing
 						}
-					} else {
-						chars[i] = ' ';
-						i++;
 					}
-				}
+				} else if (quoteSymbols.contains(chars[i])) {// quote
+					chars[i] = ' ';
+					i++;
+					if (i < chars.length) {
+						if (chars[i] == 's') {// 's
+							if (i < chars.length - 1) {
+								if (!Character.isLetterOrDigit(chars[i + 1])) {
+									chars[i] = ' ';
+									i++;
+								}
+							} else {
+								chars[i] = ' ';
+								i++;
+							}
+						}
+					}
 
-			} else if (chars[i] == '&') {// html character
-				int j = i;
-				while (j < chars.length) {
-					if (chars[j] == ' ')
-						break;
-					else if (chars[j] == '\\')
-						break;
-					else if (punct.contains(chars[j]))
-						break;
-					else if (validPrefixSymbols.contains(chars[j]))
-						break;
-					else {
-						chars[j] = ' ';
+				} else if (chars[i] == '&') {// html character
+					int j = i;
+					while (j < chars.length) {
+						if (chars[j] == ' ')
+							break;
+						else if (chars[j] == '\\')
+							break;
+						else if (punct.contains(chars[j]))
+							break;
+						else if (validPrefixSymbols.contains(chars[j]))
+							break;
+						else {
+							chars[j] = ' ';
+							j++;
+						}
+					}
+					i = j;
+				} else if (i == 0) {// punctuation - first word
+					while (text.charAt(i) == ' ') {
+						i++;
+						if (i == chars.length)
+							break;
+					}
+					int j = i + 1;
+					while (j < chars.length) {
+						if (chars[j] == ' ')
+							break;
+						if (chars[j] == '\t')
+							break;
+						if (chars[j] == '\n')
+							break;
+						if (chars[j] == '\r')
+							break;
+						if (punct.contains(chars[j])) {
+							if (chars[j] != '.') {// in case of url
+								break;
+							}
+						}
 						j++;
 					}
-				}
-				i = j;
-			} else if (i == 0) {// punctuation - first word
-				while (text.charAt(i) == ' ') {
-					i++;
-					if (i == chars.length)
-						break;
-				}
-				int j = i + 1;
-				while (j < chars.length) {
-					if (chars[j] == ' ')
-						break;
-					j++;
-				}
-				if (j == i + 1) {
-					i++;
-					continue;
-				}
-				// System.out.printf("sub-string = [[%s]]", text.substring(i,
-				// j));
-				if (urlValidator.isValid(text.substring(i, j))) {
-					i = j;
-					// System.out.println("\t\tVALID");
-				} else {
-					// System.out.println("\t\tINVALID");
-					for (int p = i; p < j; p++) {
-						if (punct.contains(chars[p])) {
-							chars[p] = ' ';
-						}
+					if (j == i + 1) {
+						i++;
+						continue;
 					}
+					// System.out.printf("sub-string = [[%s]]",
+					// text.substring(i,
+					// j));
+					if (urlValidator.isValid(text.substring(i, j))) {
+						i = j;
+						// System.out.println("\t\tVALID");
+					} else {
+						// System.out.println("\t\tINVALID");
+						for (int p = i; p < j; p++) {
+							if (punct.contains(chars[p])) {
+								chars[p] = ' ';
+							}
+						}
+						i++;
+					}
+
+				} else if (chars[i] == ' ') {// punctuation
+					int j = i + 1;
+					while (j < chars.length) {
+						if (chars[j] == ' ')
+							break;
+						if (chars[j] == '\t')
+							break;
+						if (chars[j] == '\n')
+							break;
+						if (chars[j] == '\r')
+							break;
+						if (punct.contains(chars[j])) {
+							if (chars[j] != '.') {// in case of url
+								break;
+							}
+						}
+						j++;
+					}
+					if (j == i + 1) {
+						i++;
+						continue;
+					}
+					// System.out.printf("sub-string = [[%s]]", text.substring(i
+					// +
+					// 1, j));
+					if (urlValidator.isValid(text.substring(i + 1, j))) {
+						i = j;
+						// System.out.println("\t\tVALID");
+					} else {
+						// System.out.println("\t\tINVALID");
+						for (int p = i; p < j; p++) {
+							if (punct.contains(chars[p])) {
+								chars[p] = ' ';
+							}
+						}
+						i++;
+					}
+
+				} else {
 					i++;
 				}
 
-			} else if (chars[i] == ' ') {// punctuation
-				int j = i + 1;
-				while (j < chars.length) {
-					if (chars[j] == ' ')
-						break;
-					j++;
-				}
-				if (j == i + 1) {
-					i++;
-					continue;
-				}
-				// System.out.printf("sub-string = [[%s]]", text.substring(i +
-				// 1, j));
-				if (urlValidator.isValid(text.substring(i + 1, j))) {
-					i = j;
-					// System.out.println("\t\tVALID");
-				} else {
-					// System.out.println("\t\tINVALID");
-					for (int p = i; p < j; p++) {
-						if (punct.contains(chars[p])) {
-							chars[p] = ' ';
-						}
-					}
-					i++;
-				}
-
-			} else {
-				i++;
 			}
-
+			return (new String(chars));
+		} catch (Exception e) {
+			System.out.printf("tweet = [[%s]]\n", text);
+			e.printStackTrace();
+			System.exit(-1);
 		}
-		return (new String(chars));
+		return null;
 	}
 
 	private String removeSymbolInWord(String word) {
@@ -375,7 +422,7 @@ public class TweetPreprocessingUtils {
 
 	private String getTweetContent(String message) {
 		message = removeSymbolInText(message);
-		System.out.printf("after reomve symbol [[%s]]\n", message);
+		// System.out.printf("after reomve symbol [[%s]]\n", message);
 		// TODO optimize this function using more efficient string utilities
 		int l = message.length();
 		int p = message.indexOf("rt @");
@@ -427,18 +474,18 @@ public class TweetPreprocessingUtils {
 	}
 
 	public static void main(String[] args) {
-		String text = "trump’s";
-		char a = '\u2019';
-		System.out.println("code = " + a);
+		// String text = "trump’s";
+		// char a = '\u2019';
+		// System.out.println("code = " + a);
 
-		char c = '\u2014';
-		System.out.println("c = " + c);
+		// char c = '\u2014'; // System.out.println("c = " + c);
+
 		TweetPreprocessingUtils nlpUtils = new TweetPreprocessingUtils();
-		nlpUtils.checkQuoteSymbols();
+		// nlpUtils.checkQuoteSymbols();
 
 		nlpUtils.checkStopWordList();
 
-		String message = "RT @ImranGarda: #MuslimBan is for Iraq, Iran, Libya, Somalia, Sudan, Syria, Yemen. Try to find them on this list of nations with mo https://t.co/vh1VSAUwxQ …    ";
+		String message = "Interesting,Trump's country travel ban on majority Muslim countries doesn't include the no. 1 Islamic radicalization offender:Saudi Arabia!!";
 
 		List<String> terms = nlpUtils.extractTermInTweet(message);
 		for (int i = 0; i < terms.size(); i++) {

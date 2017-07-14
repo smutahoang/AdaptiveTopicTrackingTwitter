@@ -5,14 +5,18 @@ import java.util.List;
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
+import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModelBasedFilter extends FilteringModel {
 
 	private LanguageModel filter;
+	private int nGram;
+	private TweetPreprocessingUtils preprocessingUtils;
 
 	public void init(List<Tweet> tweets) {
 		// TODO Auto-generated method stub
-		filter = new LanguageModel(tweets);
+		filter = new LanguageModel(nGram, preprocessingUtils);
+		filter.train(tweets);
 	}
 
 	public double relevantScore(Tweet tweet) {
@@ -27,9 +31,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 
 	public void filter(TweetStream stream, String ouputPath) {
 		// TODO Auto-generated method stub
-		
-	}
 
-	
+	}
 
 }
