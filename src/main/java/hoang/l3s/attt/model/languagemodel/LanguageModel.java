@@ -1,6 +1,5 @@
 package hoang.l3s.attt.model.languagemodel;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -11,10 +10,10 @@ import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModel {
 
-	private int n;
+	private int nGram;
 
-	private HashMap<String, Double> existedPreWordCountsMap;
-	private HashMap<String, HashMap<String, Double>> existedWordCountsMap;
+	private HashMap<String, Double> existedPreWordCountsMap;                  //HashMap<preWord, count>
+	private HashMap<String, HashMap<String, Double>> existedWordCountsMap;    //HashMap<preWord, HashMap<term, count>>
 	public HashMap<String, Double> unigramCountsMap;
 	public int totalCount;
 
@@ -26,7 +25,7 @@ public class LanguageModel {
 	 * @param tweets
 	 */
 	public LanguageModel(int _ngram, TweetPreprocessingUtils _preprocessingUtils) {
-		this.n = _ngram;
+		this.nGram = _ngram;
 		this.preprocessingUtils = _preprocessingUtils;
 	}
 
@@ -47,25 +46,17 @@ public class LanguageModel {
 
 				HashMap<String, Double> termCountMap = existedWordCountsMap.get(preWord.toString());
 				if (termCountMap != null) {
-					Set<String> keys = termCountMap.keySet();
-					Iterator<String> iter = keys.iterator();
-					boolean find = false;
-					while (iter.hasNext()) {
-						String aTerm = iter.next();
-						if (aTerm.equals(term)) {
-							double cnt = termCountMap.get(term);
-							termCountMap.put(term, cnt + 1.0);
-							find = true;
-							break;
-						}
-					}
-					if (!find) {
+					if(termCountMap.containsKey(term)) {
+						double cnt = termCountMap.get(term);
+						termCountMap.put(term, cnt + 1.0);
+					}else {
 						termCountMap.put(term, 1.0);
 					}
-				} else {
+				}else {
 					termCountMap = new HashMap<String, Double>();
 					termCountMap.put(term, 1.0);
 				}
+				
 				existedWordCountsMap.put(preWord.toString(), termCountMap);
 			} else {
 				existedPreWordCountsMap.put(preWord.toString(), 1.0);
@@ -83,13 +74,13 @@ public class LanguageModel {
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
-			getCountsMap(terms, this.n);
+			getCountsMap(terms, this.nGram);
 		}
 	}
 
-	public void getLM() {
+	public HashMap<String,HashMap<String,Double>> getLM() {
 		System.out.println("++++++++++++++++++++++++");
-		List<NGram> lmList = new ArrayList<NGram>();
+		HashMap<String,HashMap<String,Double>> ngramProMap = new HashMap<String,HashMap<String,Double>>();
 
 		Set<String> preKeys = existedPreWordCountsMap.keySet();
 		Iterator<String> preIter = preKeys.iterator();
@@ -97,33 +88,32 @@ public class LanguageModel {
 			String preWord = preIter.next();
 			double preCount = existedPreWordCountsMap.get(preWord);
 
+			HashMap<String,Double> termMap = new HashMap<String,Double>();
 			HashMap<String, Double> termCountMap = existedWordCountsMap.get(preWord);
 			Set<String> keys = termCountMap.keySet();
 			Iterator<String> iter = keys.iterator();
 			while (iter.hasNext()) {
 				String term = iter.next();
 				double count = termCountMap.get(term);
-
-				NGram lm = new NGram();
-				lm.n = this.n;
-				lm.preTerm = preWord;
-				lm.term = term;
-				lm.probility = count / preCount;
-				lmList.add(lm);
-
-				System.out.println("n:" + this.n + ",P(" + lm.term + "|" + lm.preTerm + ")" + " = " + count + "/"
-						+ preCount + " = " + lm.probility);
+				
+				termMap.put(term, count / preCount);
+				ngramProMap.put(preWord,termMap);
+				System.out.println("n:" + this.nGram + ",P(" + term + "|" + preWord + ")" + " = " + count + "/"
+						+ preCount + " = " + count / preCount);				
 			}
 		}
+		
+		return ngramProMap;
 	}
 
-	public void trainNgramLM(List<Tweet> tweets) {
+	public HashMap<String,HashMap<String,Double>> trainNgramLM(List<Tweet> tweets) {
 		getCount(tweets);
-		getLM();
+		return getLM();
 	}
 
-	public void trainUnigramLM(List<Tweet> tweets) {
+	public HashMap<String,Double> trainUnigramLM(List<Tweet> tweets) {
 		unigramCountsMap = new HashMap<String, Double>();
+		HashMap<String,Double> unigramProMap = new HashMap<String,Double>();
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
@@ -140,30 +130,38 @@ public class LanguageModel {
 			}
 		}
 
-		List<NGram> lmList = new ArrayList<NGram>();
 		Set<String> keys = unigramCountsMap.keySet();
 		Iterator<String> iter = keys.iterator();
 		while (iter.hasNext()) {
-			String aTerm = iter.next();
+			String term = iter.next();
+			double count = unigramCountsMap.get(term);
+			
+			unigramProMap.put(term,  count/ totalCount);
+			System.out.println("n:" + 1 + ",P(" + term + ")" + " = " + count + "/" + totalCount
+					+ " = " + count / totalCount);
 
-			NGram lm = new NGram();
-			lm.n = 1;
-			lm.preTerm = null;
-			lm.term = aTerm;
-			lm.probility = unigramCountsMap.get(aTerm) / totalCount;
-			lmList.add(lm);
-			System.out.println("n:" + 1 + ",P(" + lm.term + ")" + " = " + unigramCountsMap.get(aTerm) + "/" + totalCount
-					+ " = " + lm.probility);
+//			NGram lm = new NGram();
+//			lm.n = 1;
+//			lm.preTerm = null;
+//			lm.term = aTerm;
+//			lm.probility = unigramCountsMap.get(aTerm) / totalCount;
+//
+//			System.out.println("n:" + 1 + ",P(" + lm.term + ")" + " = " + unigramCountsMap.get(aTerm) + "/" + totalCount
+//					+ " = " + lm.probility);
 		}
+		
+		return unigramProMap;
 	}
 
-	public void train(List<Tweet> tweets) {
-		if (this.n == 1) {
-			trainUnigramLM(tweets);
-		} else {
-			trainNgramLM(tweets);
-		}
-	}
+//	public List<NGram> train(List<Tweet> tweets) {
+//		List<NGram> lmList = null;
+//		if (this.nGram == 1) {
+//			lmList = trainUnigramLM(tweets);
+//		} else {
+//			lmList = trainNgramLM(tweets);
+//		}
+//		return lmList;
+//	}
 
 	/***
 	 * compute perplexity of a tweet

@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.apache.commons.validator.routines.UrlValidator;
 
+import hoang.l3s.attt.configure.Configure;
+
 public class TweetPreprocessingUtils {
 
 	static HashSet<Character> punct;
@@ -15,7 +17,7 @@ public class TweetPreprocessingUtils {
 	static HashSet<Character> validPrefixSymbols;
 	static HashSet<Character> validSuffixSymbols;
 
-	static String stopwordPath = "/home/hoang/attt/data/stopwords";
+	// static String stopwordPath = "/home/hoang/attt/data/stopwords";
 	// static String stopwordPath =
 	// "E:/code/java/AdaptiveTopicTrackingTwitter/data/stopwords";
 	static HashSet<String> stopWords;
@@ -26,7 +28,7 @@ public class TweetPreprocessingUtils {
 			BufferedReader br;
 			String line = null;
 
-			br = new BufferedReader(new FileReader(String.format("%s/common-english-adverbs.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/common-english-adverbs.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -36,7 +38,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/common-english-prep-conj.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/common-english-prep-conj.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -46,7 +48,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/common-english-words.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/common-english-words.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -56,7 +58,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/smart-common-words.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/smart-common-words.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -66,7 +68,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/mysql-stopwords.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/mysql-stopwords.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -76,7 +78,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/twitter-slang.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/twitter-slang.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -86,7 +88,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/shorthen.txt", stopwordPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/shorthen.txt", Configure.getStopwordsPath())));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -134,33 +136,8 @@ public class TweetPreprocessingUtils {
 		quoteSymbols.add('\u0022');
 		// quotation mark (")
 		// quoteSymbols.add('\u0027'); // apostrophe (')
-		// quoteSymbols.add('\u00ab'); // left-pointing // double-angle // // //
-		// // // // //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// //
-			// quotation
-			// //
-			// //
-			// //
-			// //
-			// mark
+		// quoteSymbols.add('\u00ab'); // left-pointing // double-angle //
+
 		quoteSymbols.add('\u00bb'); // right-pointing double-angle quotation
 									// mark
 		quoteSymbols.add('\u2018'); // left single quotation mark

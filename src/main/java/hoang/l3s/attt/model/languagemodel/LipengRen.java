@@ -1,18 +1,21 @@
 package hoang.l3s.attt.model.languagemodel;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
@@ -45,6 +48,7 @@ public class LipengRen {
 			JsonParser parser = new JsonParser();
 			String line = null;
 			while ((line = br.readLine()) != null) {
+				// System.out.printf(line);
 				nLines++;
 				try {
 					JsonObject jsonTweet = (JsonObject) parser.parse(line);
@@ -96,26 +100,69 @@ public class LipengRen {
 		this.tweets.add(new Tweet(s3, "user3", 0));
 	}
 
-	public void main(String[] args) {
-		// File dir = new File("/home/hoang/attt/data/travel_ban");
-		File dir = new File("/home/ren/data");
-		File[] files = dir.listFiles();
-		for (File file : files) {
-			if (!file.getName().endsWith(".gz"))
-				continue;
-			this.countTweets(file.getAbsolutePath());
-		}
+	static List<Tweet> getFirstTweets(String file) {
+		try {
+			Locale locale = Locale.US;
+			SimpleDateFormat dateTimeFormater = new SimpleDateFormat("EEE MMM dd HH:mm:ss +0000 yyyy", locale);
+			// SimpleDateFormat dateTimeFormater = new SimpleDateFormat("MMM dd HH:mm:ss
+			// +0000 2017",locale);
+			JsonParser jsonParser = new JsonParser();
+			List<Tweet> firstTweets = new ArrayList<Tweet>();
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				JsonObject jsonTweet = (JsonObject) jsonParser.parse(line);
+				//to get english tweet without delete tweet, the count is 105
+				{
+					if (jsonTweet.has("delete"))
+						continue;
 
-		int nGram = 2;
-		TweetPreprocessingUtils preprocessingUtils = new TweetPreprocessingUtils();
-		LanguageModel ngram = new LanguageModel(nGram, preprocessingUtils);
-		ngram.train(tweets);
+					if (!jsonTweet.get("lang").toString().equals("\"en\""))
+						continue;
+				}
+				// System.out.printf("time = |%s|\n",jsonTweet.get("created_at").getAsString());
+				long createdAt = dateTimeFormater.parse(jsonTweet.get("created_at").getAsString()).getTime();
+				Tweet tweet = new Tweet(jsonTweet.get("text").getAsString(),
+						((JsonObject) jsonTweet.get("user")).get("id").getAsString(), createdAt);
+				firstTweets.add(tweet);
+			}
+
+			br.close();
+			return firstTweets;
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+
+	public void main(String[] args) {
+		// File dir = new File(Configure.getDataPath());
+		// File[] files = dir.listFiles();
+		// for (File file : files) {
+		// if (!file.getName().endsWith(".gz"))
+		// continue;
+		// this.countTweets(file.getAbsolutePath());
+		// }
+		//
+		// int nGram = 2;
+		// TweetPreprocessingUtils preprocessingUtils = new TweetPreprocessingUtils();
+		// LanguageModel ngram = new LanguageModel(nGram, preprocessingUtils);
+		// ngram.train(tweets);
+
+		
+		List<Tweet> firstTweets = getFirstTweets(Configure.getFirstTweetsPath());
+		LanguageModelBasedFilter filter = new LanguageModelBasedFilter(2);
+		filter.init(firstTweets);
+
 	}
 
 	public void test() {
 		getData();
+
+		int nGram = 2;
 		TweetPreprocessingUtils preprocessingUtils = new TweetPreprocessingUtils();
-		LanguageModel trainingLM = new LanguageModel(1, preprocessingUtils);
-		trainingLM.train(tweets);
+		LanguageModel trainingLM = new LanguageModel(nGram, preprocessingUtils);
+//		trainingLM.train(tweets);
 	}
 }
