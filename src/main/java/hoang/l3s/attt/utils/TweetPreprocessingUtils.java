@@ -24,11 +24,14 @@ public class TweetPreprocessingUtils {
 
 	static void getStopWords() {
 		try {
+			new Configure();
+
 			stopWords = new HashSet<String>();
 			BufferedReader br;
 			String line = null;
 
-			br = new BufferedReader(new FileReader(String.format("%s/common-english-adverbs.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(
+					new FileReader(String.format("%s/common-english-adverbs.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -38,7 +41,8 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/common-english-prep-conj.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(
+					new FileReader(String.format("%s/common-english-prep-conj.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -48,7 +52,8 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/common-english-words.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(
+					new FileReader(String.format("%s/common-english-words.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -58,7 +63,8 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/smart-common-words.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(
+					new FileReader(String.format("%s/smart-common-words.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -68,7 +74,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/mysql-stopwords.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(new FileReader(String.format("%s/mysql-stopwords.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -78,7 +84,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/twitter-slang.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(new FileReader(String.format("%s/twitter-slang.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -88,7 +94,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/shorthen.txt", Configure.getStopwordsPath())));
+			br = new BufferedReader(new FileReader(String.format("%s/shorthen.txt", Configure.stopwordsPath)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -199,13 +205,63 @@ public class TweetPreprocessingUtils {
 		init();
 	}
 
+	private boolean isURLStart(char[] chars, int i) {
+		if (i >= chars.length - 4)
+			return false;
+		if (i > 0) {
+			if (chars[i - 1] != ' ')
+				return false;
+		}
+		if (chars[i] != 'h')
+			return false;
+		if (chars[i + 1] != 't')
+			return false;
+		if (chars[i + 2] != 't')
+			return false;
+		if (chars[i + 3] != 'p')
+			return false;
+		return true;
+	}
+
 	private String removeSymbolInText(String text) {
 		try {
-			char[] chars = text.toCharArray();
+			char[] chars = text.trim().toCharArray();
 			int i = 0;
 			while (i < chars.length) {
-				// System.out.printf("i = %d char = %c\n", i, chars[i]);
-				if (chars[i] == '\n') {// newline
+				System.out.printf("i = %d char = %c\n", i, chars[i]);
+				if (isURLStart(chars, i)) {// check url
+					int j = i + 1;
+					while (j < chars.length) {
+						if (chars[j] == ' ')
+							break;
+						if (chars[j] == '\t')
+							break;
+						if (chars[j] == '\n')
+							break;
+						if (chars[j] == '\r')
+							break;
+						j++;
+					}
+					if (j == i + 1) {
+						i++;
+						continue;
+					}
+					if (urlValidator.isValid(text.substring(i, j))) {
+						i = j;
+						// System.out.println("\t\tVALID");
+					} else {
+						// System.out.println("\t\tINVALID");
+						for (int p = i; p < j; p++) {
+							if (punct.contains(chars[p])) {
+								chars[p] = ' ';
+							}
+						}
+						i = j;
+					}
+				} else if (punct.contains(chars[i])) {
+					chars[i] = ' ';
+					i++;
+				} else if (chars[i] == '\n') {// newline
 					chars[i] = ' ';
 					i++;
 				} else if (chars[i] == '\r') {// newline
@@ -265,87 +321,6 @@ public class TweetPreprocessingUtils {
 						}
 					}
 					i = j;
-				} else if (i == 0) {// punctuation - first word
-					while (text.charAt(i) == ' ') {
-						i++;
-						if (i == chars.length)
-							break;
-					}
-					int j = i + 1;
-					while (j < chars.length) {
-						if (chars[j] == ' ')
-							break;
-						if (chars[j] == '\t')
-							break;
-						if (chars[j] == '\n')
-							break;
-						if (chars[j] == '\r')
-							break;
-						if (punct.contains(chars[j])) {
-							if (chars[j] != '.') {// in case of url
-								break;
-							}
-						}
-						j++;
-					}
-					if (j == i + 1) {
-						i++;
-						continue;
-					}
-					// System.out.printf("sub-string = [[%s]]",
-					// text.substring(i,
-					// j));
-					if (urlValidator.isValid(text.substring(i, j))) {
-						i = j;
-						// System.out.println("\t\tVALID");
-					} else {
-						// System.out.println("\t\tINVALID");
-						for (int p = i; p < j; p++) {
-							if (punct.contains(chars[p])) {
-								chars[p] = ' ';
-							}
-						}
-						i++;
-					}
-
-				} else if (chars[i] == ' ') {// punctuation
-					int j = i + 1;
-					while (j < chars.length) {
-						if (chars[j] == ' ')
-							break;
-						if (chars[j] == '\t')
-							break;
-						if (chars[j] == '\n')
-							break;
-						if (chars[j] == '\r')
-							break;
-						if (punct.contains(chars[j])) {
-							if (chars[j] != '.') {// in case of url
-								break;
-							}
-						}
-						j++;
-					}
-					if (j == i + 1) {
-						i++;
-						continue;
-					}
-					// System.out.printf("sub-string = [[%s]]", text.substring(i
-					// +
-					// 1, j));
-					if (urlValidator.isValid(text.substring(i + 1, j))) {
-						i = j;
-						// System.out.println("\t\tVALID");
-					} else {
-						// System.out.println("\t\tINVALID");
-						for (int p = i; p < j; p++) {
-							if (punct.contains(chars[p])) {
-								chars[p] = ' ';
-							}
-						}
-						i++;
-					}
-
 				} else {
 					i++;
 				}
@@ -462,7 +437,7 @@ public class TweetPreprocessingUtils {
 
 		nlpUtils.checkStopWordList();
 
-		String message = "Interesting,Trump's country travel ban on majority Muslim countries doesn't include the no. 1 Islamic radicalization offender:Saudi Arabia!!";
+		String message = "Interesting,Trump's https://t.co/vh1VSAUwxQ country travel ban on majority Muslim countries doesn't include the no. 1 Islamic radicalization offender:Saudi Arabia https://t.co/vh1VSAUwxQ";
 
 		List<String> terms = nlpUtils.extractTermInTweet(message);
 		for (int i = 0; i < terms.size(); i++) {

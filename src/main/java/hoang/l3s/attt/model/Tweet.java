@@ -5,6 +5,7 @@ import java.util.List;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class Tweet {
+
 	private String text;
 	private String user;
 	private long created_At;

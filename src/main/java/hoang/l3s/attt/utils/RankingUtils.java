@@ -1,6 +1,8 @@
 package hoang.l3s.attt.utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,7 +10,39 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import hoang.l3s.attt.model.graphbased.AdjacentTerm;
 
+
 public class RankingUtils {
+	static private Comparator<WeightedElement> ascName;
+	static private Comparator<WeightedElement> descWeight;
+
+	static {
+		ascName = new Comparator<WeightedElement>() {
+			public int compare(WeightedElement e1, WeightedElement e2) {
+				return e1.getName().compareTo(e2.getName());
+			}
+		};
+
+		descWeight = new Comparator<WeightedElement>() {
+			public int compare(WeightedElement e1, WeightedElement e2) {
+				if (e2.getWeight() - e1.getWeight() > 0)
+					return 1;
+				else if (e2.getWeight() - e1.getWeight() < 0)
+					return -1;
+				else
+					return 0;
+			}
+		};
+	}
+
+	public WeightedElement[] elements;
+
+	public void setElements(String[] names, double[] weights) {
+		elements = new WeightedElement[names.length];
+		for (int i = 0; i < elements.length; i++) {
+			elements[i] = new WeightedElement(names[i], weights[i]);
+		}
+	}
+
 	public static List<Integer> getTopAdjTerms(int k, HashMap<Integer, AdjacentTerm> adjTerms) {
 		PriorityBlockingQueue<IntKeyDoubleValue_Pair> queue = new PriorityBlockingQueue<IntKeyDoubleValue_Pair>();
 		for (Map.Entry<Integer, AdjacentTerm> adjTermIter : adjTerms.entrySet()) {
@@ -30,6 +64,16 @@ public class RankingUtils {
 			topAdjTerms.add(topAdjTerms.size(), queue.poll().getKey());
 		}
 		return topAdjTerms;
+	}
+
+	public WeightedElement[] getTopKbyWeight(String[] names, double[] weights, int k) {
+		setElements(names, weights);
+		Arrays.sort(elements, descWeight);
+
+		WeightedElement[] topKbyWeight = new WeightedElement[k];
+		for (int i = 0; i < k; i++)
+			topKbyWeight[i] = elements[i];
+		return topKbyWeight;
 	}
 
 	public static void main(String[] args) {

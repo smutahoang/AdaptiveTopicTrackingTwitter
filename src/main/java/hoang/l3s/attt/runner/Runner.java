@@ -15,6 +15,7 @@ import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
+import hoang.l3s.attt.model.graphbased.GraphBasedFilter;
 import hoang.l3s.attt.model.keywordbased.KeyWordMatchingFilter;
 import hoang.l3s.attt.model.languagemodel.LanguageModelBasedFilter;
 
@@ -22,14 +23,16 @@ public class Runner {
 
 	static List<Tweet> getFirstTweets(String file) {
 		try {
-			SimpleDateFormat dateTimeFormater = new SimpleDateFormat("EEE MMM dd HH:mm:ss +0000 yyyy",Locale.US);
+			String dateformat = "EEE MMM dd HH:mm:ss +0000 yyyy";
+
+			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateformat, Locale.US);
 			JsonParser jsonParser = new JsonParser();
 			List<Tweet> firstTweets = new ArrayList<Tweet>();
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			String line = null;
 			while ((line = br.readLine()) != null) {
 				JsonObject jsonTweet = (JsonObject) jsonParser.parse(line);
-				//to get english tweet without delete tweet, the count is 105
+				// to get english tweet without delete tweet, the count is 105
 				{
 					if (jsonTweet.has("delete"))
 						continue;
@@ -70,20 +73,16 @@ public class Runner {
 			String startDate = "2017-01-28";
 			String outputPath = "/home/hoang/attt/output";
 
-			if (model.equals("km")) {
-				filteringModel = new KeyWordMatchingFilter();
-			} else {
-				System.out.printf("%s is not an option for filtering model\n", model);
-				System.exit(-1);
-			}
-
 			List<Tweet> firstTweets = getFirstTweets(firstTweetPath);
 
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			TweetStream stream = new TweetStream(streamPath, dateFormat.parse(startDate));
 
+			filteringModel = new GraphBasedFilter();
+
 			filteringModel.init(firstTweets);
 			filteringModel.filter(stream, outputPath);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -95,33 +94,34 @@ public class Runner {
 		// hoang.l3s.attt.data.LipengRen.main(null);
 		// hoang.l3s.attt.data.GetFirstTweets.main(null);
 		// filter(args);
-		Configure.getConf();
+		new Configure();
 		int nGram = 1;
-		
+
 		switch (Configure.author) {
 		case hoang:
 			filter(args);
 			break;
 		case ren:
-//			long startTime = System.currentTimeMillis();
-			
+			// long startTime = System.currentTimeMillis();
+
 			try {
-				List<Tweet> firstTweets = getFirstTweets(Configure.getFirstTweetsPath());
+				List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
 				LanguageModelBasedFilter filter = new LanguageModelBasedFilter(nGram);
 				filter.init(firstTweets);
-				
+
 				String startDate = "2017-01-28";
 				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-				TweetStream stream = new TweetStream(Configure.getStreamPath(), dateFormat.parse(startDate));
-				filter.filter(stream, Configure.getOutputPath());
-				
+				TweetStream stream = new TweetStream(Configure.streamPath, dateFormat.parse(startDate));
+				filter.filter(stream, Configure.outputPath);
+
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-//			long endTime = System.currentTimeMillis();
-//			System.out.println("running time： " + (endTime - startTime) + "ms");
+
+			// long endTime = System.currentTimeMillis();
+			// System.out.println("running time： " + (endTime - startTime) +
+			// "ms");
 			break;
 		default:
 			break;

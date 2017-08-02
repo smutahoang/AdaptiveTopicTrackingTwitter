@@ -1,167 +1,197 @@
 package hoang.l3s.attt.model.languagemodel;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import hoang.l3s.attt.model.Tweet;
+import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModel {
 
+	private static String placeholderKey = "unigram";
+
 	private int nGram;
 
-	private HashMap<String, Double> existedPreWordCountsMap;                  //HashMap<preWord, count>
-	private HashMap<String, HashMap<String, Double>> existedWordCountsMap;    //HashMap<preWord, HashMap<term, count>>
-	public HashMap<String, Double> unigramCountsMap;
-	public int totalCount;
+	private HashMap<String, Double> preTermCountMap; // HashMap<preTerm, count>
+	private HashMap<String, HashMap<String, Double>> nTermCountMap; // HashMap<preTerm, HashMap<term, count>>
 
 	private TweetPreprocessingUtils preprocessingUtils;
+	private LanguageModelSmoothing smoothing;
+	private HashMap<String, HashMap<String, Double>> bgProbMap;
 
 	/***
 	 * to train a language model based on a set of tweets
 	 * 
 	 * @param tweets
 	 */
-	public LanguageModel(int _ngram, TweetPreprocessingUtils _preprocessingUtils) {
+	public LanguageModel(int _ngram, TweetPreprocessingUtils _preprocessingUtils, LanguageModelSmoothing _smoothing,
+			HashMap<String, HashMap<String, Double>> _bgProbMap) {
 		this.nGram = _ngram;
 		this.preprocessingUtils = _preprocessingUtils;
+		this.smoothing = _smoothing;
+		this.bgProbMap = _bgProbMap;
 	}
 
-	public void getCountsMap(List<String> terms, int count) {
+	/*
+	 * process one tweet
+	 */
+	public void getCountMap(List<String> terms) {
 
-		for (int j = 0; j < terms.size() - (count - 1); j++) {
-			StringBuffer preWord = new StringBuffer("");
+		for (int j = 0; j < terms.size() - (nGram - 1); j++) {
+			StringBuffer preTerm = new StringBuffer("");
 
 			int k = 0;
-			for (k = 0; k < count - 1; k++) {
-				preWord.append(terms.get(j + k) + " ");
+			for (k = 0; k < nGram - 1; k++) {
+				preTerm.append(terms.get(j + k) + " ");
 			}
 			String term = terms.get(j + k);
 
-			if (existedPreWordCountsMap.containsKey(preWord.toString())) {
-				double preCnt = existedPreWordCountsMap.get(preWord.toString());
-				existedPreWordCountsMap.put(preWord.toString(), preCnt + 1.0);
+			if (preTermCountMap.containsKey(preTerm.toString())) {
+				double preCnt = preTermCountMap.get(preTerm.toString());
+				preTermCountMap.put(preTerm.toString(), preCnt + 1.0);
 
-				HashMap<String, Double> termCountMap = existedWordCountsMap.get(preWord.toString());
+				HashMap<String, Double> termCountMap = nTermCountMap.get(preTerm.toString());
 				if (termCountMap != null) {
-					if(termCountMap.containsKey(term)) {
+					if (termCountMap.containsKey(term)) {
 						double cnt = termCountMap.get(term);
 						termCountMap.put(term, cnt + 1.0);
-					}else {
+					} else {
 						termCountMap.put(term, 1.0);
 					}
-				}else {
+				} else {
 					termCountMap = new HashMap<String, Double>();
 					termCountMap.put(term, 1.0);
 				}
-				
-				existedWordCountsMap.put(preWord.toString(), termCountMap);
+
+				nTermCountMap.put(preTerm.toString(), termCountMap);
 			} else {
-				existedPreWordCountsMap.put(preWord.toString(), 1.0);
+				preTermCountMap.put(preTerm.toString(), 1.0);
 
 				HashMap<String, Double> termCountMap = new HashMap<String, Double>();
 				termCountMap.put(term, 1.0);
-				existedWordCountsMap.put(preWord.toString(), termCountMap);
+				nTermCountMap.put(preTerm.toString(), termCountMap);
 			}
 		}
 	}
 
-	public void getCount(List<Tweet> tweets) {
-		existedPreWordCountsMap = new HashMap<String, Double>();
-		existedWordCountsMap = new HashMap<String, HashMap<String, Double>>();
+	public void getNgramCount(List<Tweet> tweets) {
+		preTermCountMap = new HashMap<String, Double>();
+		nTermCountMap = new HashMap<String, HashMap<String, Double>>();
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
-			getCountsMap(terms, this.nGram);
+			getCountMap(terms);
 		}
 	}
 
-	public HashMap<String,HashMap<String,Double>> getLM() {
-		System.out.println("++++++++++++++++++++++++");
-		HashMap<String,HashMap<String,Double>> ngramProMap = new HashMap<String,HashMap<String,Double>>();
-
-		Set<String> preKeys = existedPreWordCountsMap.keySet();
-		Iterator<String> preIter = preKeys.iterator();
-		while (preIter.hasNext()) {
-			String preWord = preIter.next();
-			double preCount = existedPreWordCountsMap.get(preWord);
-
-			HashMap<String,Double> termMap = new HashMap<String,Double>();
-			HashMap<String, Double> termCountMap = existedWordCountsMap.get(preWord);
-			Set<String> keys = termCountMap.keySet();
-			Iterator<String> iter = keys.iterator();
-			while (iter.hasNext()) {
-				String term = iter.next();
-				double count = termCountMap.get(term);
-				
-				termMap.put(term, count / preCount);
-				ngramProMap.put(preWord,termMap);
-				System.out.println("n:" + this.nGram + ",P(" + term + "|" + preWord + ")" + " = " + count + "/"
-						+ preCount + " = " + count / preCount);				
-			}
-		}
-		
-		return ngramProMap;
-	}
-
-	public HashMap<String,HashMap<String,Double>> trainNgramLM(List<Tweet> tweets) {
-		getCount(tweets);
-		return getLM();
-	}
-
-	public HashMap<String,Double> trainUnigramLM(List<Tweet> tweets) {
-		unigramCountsMap = new HashMap<String, Double>();
-		HashMap<String,Double> unigramProMap = new HashMap<String,Double>();
+	public void getUnigramCount(List<Tweet> tweets) {
+		HashMap<String, Double> unigramCountMap = new HashMap<String, Double>();
+		double totalCount = 0;
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
 			int len = terms.size();
 			for (int j = 0; j < len; j++) {
-				String word = terms.get(j);
-				if (!unigramCountsMap.containsKey(word)) {
-					unigramCountsMap.put(word, 1.0);
+				String term = terms.get(j);
+				if (!unigramCountMap.containsKey(term)) {
+					unigramCountMap.put(term, 1.0);
 				} else {
-					double count = unigramCountsMap.get(word);
-					unigramCountsMap.put(word, count + 1.0);
+					double count = unigramCountMap.get(term);
+					unigramCountMap.put(term, count + 1.0);
 				}
 				totalCount++;
 			}
 		}
+		/*
+		 * To use the same smoothing technology, we make the same format of unigram as
+		 * ngram, the method is to add an placeholder key as the preWord of unigram, and
+		 * consider the totalcount of pre as the preWord's count
+		 */
+		preTermCountMap = new HashMap<String, Double>();
+		nTermCountMap = new HashMap<String, HashMap<String, Double>>();
+		preTermCountMap.put(placeholderKey, totalCount);
+		nTermCountMap.put(placeholderKey, unigramCountMap);
 
-		Set<String> keys = unigramCountsMap.keySet();
-		Iterator<String> iter = keys.iterator();
-		while (iter.hasNext()) {
-			String term = iter.next();
-			double count = unigramCountsMap.get(term);
-			
-			unigramProMap.put(term,  count/ totalCount);
-			System.out.println("n:" + 1 + ",P(" + term + ")" + " = " + count + "/" + totalCount
-					+ " = " + count / totalCount);
-
-//			NGram lm = new NGram();
-//			lm.n = 1;
-//			lm.preTerm = null;
-//			lm.term = aTerm;
-//			lm.probility = unigramCountsMap.get(aTerm) / totalCount;
-//
-//			System.out.println("n:" + 1 + ",P(" + lm.term + ")" + " = " + unigramCountsMap.get(aTerm) + "/" + totalCount
-//					+ " = " + lm.probility);
-		}
-		
-		return unigramProMap;
 	}
 
-//	public List<NGram> train(List<Tweet> tweets) {
-//		List<NGram> lmList = null;
-//		if (this.nGram == 1) {
-//			lmList = trainUnigramLM(tweets);
-//		} else {
-//			lmList = trainNgramLM(tweets);
-//		}
-//		return lmList;
-//	}
+	public void trainLM(List<Tweet> tweets, SmoothingType type) {
+		if (nGram == 1) {
+			getUnigramCount(tweets);
+		} else {
+			getNgramCount(tweets);
+		}
+
+		this.smoothing.smoothing(preTermCountMap, nTermCountMap, bgProbMap, type);
+
+		printLM(bgProbMap);
+	}
+
+	public void printLM(HashMap<String, HashMap<String, Double>> ngramProbMap) {
+		if (ngramProbMap == null) {
+			System.out.println("ngramProbMap == null");
+		}
+		Set<String> preKeys = ngramProbMap.keySet();
+		Iterator<String> preIter = preKeys.iterator();
+		int num = 0;
+		double sum = 0;
+		while (preIter.hasNext()) {
+			String preTerm = preIter.next();
+
+			HashMap<String, Double> termProbMap = ngramProbMap.get(preTerm);
+			Set<String> keys = termProbMap.keySet();
+			Iterator<String> iter = keys.iterator();
+			while (iter.hasNext()) {
+				String term = iter.next();
+
+				double preCount = 0;
+				double count = 0;
+				if (nTermCountMap.containsKey(preTerm) && nTermCountMap.get(preTerm).containsKey(term)) {
+					preCount = preTermCountMap.get(preTerm);
+					count = nTermCountMap.get(preTerm).get(term);
+				}
+				double prob = termProbMap.get(term);
+
+				System.out.println(smoothing.formatPrintProb(this.nGram, preTerm, term, preCount, count, prob));
+
+				num++;
+				sum += prob;
+			}
+		}
+
+		System.out.println("total size:" + num + " *******sum:" + sum);
+	}
+
+	public List<Double> getProbilities(Tweet tweet, HashMap<String, HashMap<String, Double>> probMap) {
+		List<Double> probilitiesList = new ArrayList<Double>();
+		List<String> terms = tweet.getTerms(preprocessingUtils);
+		System.out.println("term size:" + terms.size());
+
+		for (int i = 0; i < terms.size() - nGram + 1; i++) {
+			StringBuffer preTerm = new StringBuffer("");
+			if (nGram == 1) {
+				preTerm.append(placeholderKey);
+			} else {
+				for (int j = 0; j < nGram - 1; j++) {
+					preTerm.append(terms.get(i + j) + " ");
+				}
+			}
+
+			String term = terms.get(i + nGram - 1);
+			System.out.println(term + "|" + preTerm);
+
+			if (probMap.containsKey(preTerm.toString()) && probMap.get(preTerm.toString()).containsKey(term)) {
+				probilitiesList.add(probMap.get(preTerm.toString()).get(term));
+				System.out.println("-----------pro:" + probMap.get(preTerm.toString()).get(term));
+			}
+		}
+
+		return probilitiesList;
+
+	}
 
 	/***
 	 * compute perplexity of a tweet
@@ -170,7 +200,30 @@ public class LanguageModel {
 	 * @return
 	 */
 	public double getPerplexity(Tweet tweet) {
-		return 0;
+
+		double perplexity = 0;
+		double sum = 0;
+		List<Double> probList = getProbilities(tweet, bgProbMap);
+		int count = probList.size();
+
+		if (count == 0) {
+			return -1;
+		}
+
+		for (int i = 0; i < count; i++) {
+			double pro = probList.get(i);
+			sum += Math.log(pro) / Math.log(2);
+			// System.out.print("a pro:" + pro + " log:" + Math.log(pro) / Math.log(2) + "
+			// sum:" + sum + "\n");
+		}
+
+		sum = sum * (-1.0 / count);
+		// System.out.println("sum:" + sum);
+		perplexity = Math.pow(2, sum);
+
+		System.out.println("perplexity:" + perplexity + " probList.size:" + probList.size());
+
+		return perplexity;
 	}
 
 	/***
@@ -181,4 +234,5 @@ public class LanguageModel {
 	public void update(Tweet tweet) {
 
 	}
+
 }

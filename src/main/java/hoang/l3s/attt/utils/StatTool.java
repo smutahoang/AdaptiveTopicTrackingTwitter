@@ -218,15 +218,24 @@ public class StatTool {
 	}
 
 	public int sampleCRP(int[] samples, int K, int n, double alpha, Random rand) {
+		int time = rand.nextInt(10);
+		for (int i = 0; i < time; i++)
+			rand.nextDouble();
+
 		int sum = 0;
 		for (int i = 0; i < K; i++) {
 			sum += samples[i];
 		}
+
 		if (sum != n) {
-			System.err.println("sum!=n");
+			System.out.println("sum!=n");
 			System.exit(-1);
 		}
-		double u = rand.nextDouble() * (n + alpha);
+		double u = rand.nextDouble();
+		System.out.printf("u = %f, K = %d, n = %d", u, K, n);
+
+		u *= (n + alpha);
+
 		for (int i = 0; i < K; i++) {
 			u -= samples[i];
 			if (u < 0) {
@@ -292,21 +301,16 @@ public class StatTool {
 		}
 		Random rand = new Random(System.currentTimeMillis());
 		int K = 0;
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < 100; i++) {
 			int c = statTool.sampleCRP(samples, K, i, 1, rand);
-			System.out.printf("c = %d\n", c);
 			samples[c]++;
-			System.out.printf("crp[%d] = %d\n", i, c);
+			System.out.printf("\tcrp[%d] = %d \t samples[%d] = %d\n", i, c, c, samples[c]);
 			if (c == K)
 				K++;
 		}
 		System.out.println("*****************************************");
-		for (int i = 0; i < samples.length; i++) {
-			if (samples[i] > 0)
-				System.out.printf("samples[%d] = %d\n", i, samples[i]);
-			else {
-				break;
-			}
+		for (int i = 0; i < K; i++) {
+			System.out.printf("samples[%d] = %d\n", i, samples[i]);
 		}
 
 	}

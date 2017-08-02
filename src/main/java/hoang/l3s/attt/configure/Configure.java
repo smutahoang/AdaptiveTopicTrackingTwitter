@@ -1,55 +1,35 @@
 package hoang.l3s.attt.configure;
 
+import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
+
 public class Configure {
 
 	public enum Author {
 		hoang, ren
 	}
+	
+	public enum UpdateType {
+		Forget, Queue
+	}
 
 	public final static Author author = Author.ren;
 	public final static boolean runningOnLocal = false;
-	
 
-	private static String stopwordsPath;
-	private static String firstTweetsPath;
-	private static String streamPath;
-	private static String outputPath;
+	public static int nGram = 1;
+	public static String startData = "2017-01-28";
+	public static double perplexityThreshold;
+	public static int queueCapacity = 1000;
+	public static int updateBufferCapacity = 100;
+	public static SmoothingType smoothingType = SmoothingType.AbsoluteDiscounting;
+	public static UpdateType updateType = UpdateType.Forget;
 
-	private static String dirPath;
-	
-	public static String getStopwordsPath() {
-		return stopwordsPath;
-	}
+	public static String dirPath;
+	public static String stopwordsPath;
+	public static String firstTweetsPath;
+	public static String streamPath;
+	public static String outputPath;
 
-	public static void setStopwordsPath(String stopwordsPath) {
-		Configure.stopwordsPath = stopwordsPath;
-	}
-
-	public static String getFirstTweetsPath() {
-		return firstTweetsPath;
-	}
-
-	public static void setFirstTweetsPath(String firstTweetsPath) {
-		Configure.firstTweetsPath = firstTweetsPath;
-	}
-
-	public static String getStreamPath() {
-		return streamPath;
-	}
-
-	public static void setStreamPath(String streamPath) {
-		Configure.streamPath = streamPath;
-	}
-
-	public static String getOutputPath() {
-		return outputPath;
-	}
-
-	public static void setOutputPath(String outputPath) {
-		Configure.outputPath = outputPath;
-	}
-
-	private Configure() {
+	public Configure() {
 		if (author == Author.hoang) {
 			dirPath = "/home/hoang/attt";
 		}else {
@@ -60,18 +40,23 @@ public class Configure {
 			}
 		}
 		
-		Configure.setStopwordsPath(String.format("%s/data/stopwords",dirPath));
-		Configure.setFirstTweetsPath(String.format("%s/data/firstTweets/travel_ban.txt",dirPath));
-		Configure.setStreamPath(String.format("%s/data/travel_ban",dirPath));
-		Configure.setOutputPath(String.format("%s/output",dirPath));
+		Configure.stopwordsPath = String.format("%s/data/stopwords",dirPath);
+		Configure.firstTweetsPath  = String.format("%s/data/firstTweets/travel_ban.txt",dirPath);
+		Configure.streamPath = String.format("%s/data/travel_ban",dirPath);
+		Configure.outputPath = String.format("%s/output",dirPath);
 		
+		if(Configure.nGram == 1) {
+			Configure.perplexityThreshold = 200;
+		}else{
+			Configure.perplexityThreshold = 2;
+		}	
 	}
 
-	private static class SingletonHolder {
-		private static final Configure conf = new Configure();
-	}
-
-	public static final Configure getConf() {
-		return SingletonHolder.conf;
-	}
+//	private static class SingletonHolder {
+//		private static final Configure conf = new Configure();
+//	}
+//
+//	public static final Configure getConf() {
+//		return SingletonHolder.conf;
+//	}
 }

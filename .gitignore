@@ -5,6 +5,10 @@ ehthumbs.db
 # Folder config file
 Desktop.ini
 
+#output
+/output
+/target
+
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
@@ -46,17 +50,13 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-#private code
 data/
-src/main/java/hoang/l3s/attt/model/graphbased
-src/main/java/hoang/l3s/attt/evaluation
-src/main/java/hoang/l3s/attt/utils/RankingUtils.java
-target/
 src_backup/
-=======
-.classpath
-.project
 target/
-.settings/org.maven.ide.eclipse.prefs
-pom.xml
-*.class
+src/main/java/hoang/l3s/attt/evaluation
+src/main/java/hoang/l3s/attt/model/graphbased
+data/
+
+src/main/java/hoang/l3s/attt/utils/RankingUtils.java
+src/main/java/hoang/l3s/attt/utils/StatTool.java
+src/main/java/hoang/l3s/attt/utils/WeightedElement.java
