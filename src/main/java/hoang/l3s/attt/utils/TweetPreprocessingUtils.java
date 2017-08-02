@@ -228,7 +228,7 @@ public class TweetPreprocessingUtils {
 			char[] chars = text.trim().toCharArray();
 			int i = 0;
 			while (i < chars.length) {
-				System.out.printf("i = %d char = %c\n", i, chars[i]);
+				//System.out.printf("i = %d char = %c\n", i, chars[i]);
 				if (isURLStart(chars, i)) {// check url
 					int j = i + 1;
 					while (j < chars.length) {

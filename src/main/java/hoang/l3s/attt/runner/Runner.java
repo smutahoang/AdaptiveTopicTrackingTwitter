@@ -42,7 +42,7 @@ public class Runner {
 				}
 				System.out.printf("time = |%s|\n", jsonTweet.get("created_at").getAsString());
 				long createdAt = dateTimeFormater.parse(jsonTweet.get("created_at").getAsString()).getTime();
-				Tweet tweet = new Tweet(jsonTweet.get("text").getAsString(),
+				Tweet tweet = new Tweet(jsonTweet.get("id_str").getAsString(), jsonTweet.get("text").getAsString(),
 						((JsonObject) jsonTweet.get("user")).get("id").getAsString(), createdAt);
 				firstTweets.add(tweet);
 			}

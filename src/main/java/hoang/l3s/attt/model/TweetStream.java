@@ -66,11 +66,12 @@ public class TweetStream {
 				try {
 					JsonObject jsonTweet = (JsonObject) parser.parse(line);
 					if (jsonTweet.get("lang").getAsString().equals("en")) {
+						String tweetId = jsonTweet.get("id_str").getAsString();
 						String user = ((JsonObject) jsonTweet.get("user")).get("id").getAsString();
 						String text = jsonTweet.get("text").getAsString();
 						long createdAt = tweetDateTimeFormater.parse(jsonTweet.get("created_at").getAsString())
 								.getTime();
-						tweet = new Tweet(text, user, createdAt);
+						tweet = new Tweet(tweetId, text, user, createdAt);
 					}
 				} catch (Exception e) {
 					// System.out.println("line = " + line);

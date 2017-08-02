@@ -6,6 +6,7 @@ import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class Tweet {
 
+	private String tweetId;
 	private String text;
 	private String user;
 	private long created_At;
@@ -14,11 +15,16 @@ public class Tweet {
 
 	private List<String> terms;
 
-	public Tweet(String _text, String _user, long _publishedTime) {
+	public Tweet(String _tweetId, String _text, String _user, long _publishedTime) {
+		tweetId = _tweetId;
 		text = _text;
 		user = _user;
 		created_At = _publishedTime;
 		terms = null;
+	}
+
+	public String getTweetId() {
+		return tweetId;
 	}
 
 	public String getText() {

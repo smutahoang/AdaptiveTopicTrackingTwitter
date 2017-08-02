@@ -37,7 +37,8 @@ public abstract class FilteringModel {
 	public void outputTweet(Tweet tweet, String outputPath) {
 		try {
 			BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath, true));
-			bw.write(String.format("%s\t%s\t%s\n", tweet.getPublishedTime(), tweet.getUser(), tweet.getText()));
+			bw.write(String.format("%s\t%s\t%s\t%s\n", tweet.getTweetId(), tweet.getPublishedTime(), tweet.getUser(),
+					tweet.getText().replace('\n', ' ').replace('\r', ' ')));
 			bw.close();
 		} catch (Exception e) {
 			e.printStackTrace();

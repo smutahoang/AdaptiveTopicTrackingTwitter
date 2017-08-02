@@ -7,12 +7,12 @@ public class Configure {
 	public enum Author {
 		hoang, ren
 	}
-	
+
 	public enum UpdateType {
 		Forget, Queue
 	}
 
-	public final static Author author = Author.ren;
+	public final static Author author = Author.hoang;
 	public final static boolean runningOnLocal = false;
 
 	public static int nGram = 1;
@@ -32,31 +32,32 @@ public class Configure {
 	public Configure() {
 		if (author == Author.hoang) {
 			dirPath = "/home/hoang/attt";
-		}else {
-			if(runningOnLocal) {
+			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+		} else {
+			if (runningOnLocal) {
 				dirPath = "/Users/renlipeng/Documents/topicTracking";
-			}else {
+			} else {
 				dirPath = "/home/ren";
 			}
 		}
-		
-		Configure.stopwordsPath = String.format("%s/data/stopwords",dirPath);
-		Configure.firstTweetsPath  = String.format("%s/data/firstTweets/travel_ban.txt",dirPath);
-		Configure.streamPath = String.format("%s/data/travel_ban",dirPath);
-		Configure.outputPath = String.format("%s/output",dirPath);
-		
-		if(Configure.nGram == 1) {
+
+		Configure.stopwordsPath = String.format("%s/data/stopwords", dirPath);
+		Configure.firstTweetsPath = String.format("%s/data/firstTweets/travel_ban.txt", dirPath);
+		Configure.streamPath = String.format("%s/data/travel_ban", dirPath);
+		Configure.outputPath = String.format("%s/output", dirPath);
+
+		if (Configure.nGram == 1) {
 			Configure.perplexityThreshold = 200;
-		}else{
+		} else {
 			Configure.perplexityThreshold = 2;
-		}	
+		}
 	}
 
-//	private static class SingletonHolder {
-//		private static final Configure conf = new Configure();
-//	}
-//
-//	public static final Configure getConf() {
-//		return SingletonHolder.conf;
-//	}
+	// private static class SingletonHolder {
+	// private static final Configure conf = new Configure();
+	// }
+	//
+	// public static final Configure getConf() {
+	// return SingletonHolder.conf;
+	// }
 }
