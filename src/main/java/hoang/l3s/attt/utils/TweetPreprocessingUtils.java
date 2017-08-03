@@ -228,7 +228,7 @@ public class TweetPreprocessingUtils {
 			char[] chars = text.trim().toCharArray();
 			int i = 0;
 			while (i < chars.length) {
-				//System.out.printf("i = %d char = %c\n", i, chars[i]);
+				// System.out.printf("i = %d char = %c\n", i, chars[i]);
 				if (isURLStart(chars, i)) {// check url
 					int j = i + 1;
 					while (j < chars.length) {
@@ -335,7 +335,17 @@ public class TweetPreprocessingUtils {
 		return null;
 	}
 
+	private static boolean isEnglish(String word) {
+		for (int i = 0; i < word.length(); i++)
+			if ((int) word.charAt(i) > 128)
+				return false;
+		return true;
+	}
+
 	private String removeSymbolInWord(String word) {
+		if (!isEnglish(word)) {
+			return null;
+		}
 		int r = word.length();
 		if (r == 0)
 			return null;
