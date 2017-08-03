@@ -12,7 +12,8 @@ import hoang.l3s.attt.configure.Configure;
 
 public class TweetPreprocessingUtils {
 
-	static HashSet<Character> punct;
+	static HashSet<Character> punctuations;
+	static HashSet<Character> braces;
 	static HashSet<Character> quoteSymbols;
 	static HashSet<Character> validPrefixSymbols;
 	static HashSet<Character> validSuffixSymbols;
@@ -112,24 +113,38 @@ public class TweetPreprocessingUtils {
 
 	private UrlValidator urlValidator;
 
-	private void initPunct() {
-		punct = new HashSet<Character>();
-		punct.add('~');
-		punct.add('^');
-		punct.add('(');
-		punct.add(')');
-		punct.add('{');
-		punct.add('}');
-		punct.add('[');
-		punct.add(']');
-		punct.add('<');
-		punct.add('>');
-		punct.add(':');
-		punct.add(';');
-		punct.add(',');
-		punct.add('.');
-		punct.add('?');
-		punct.add('!');
+	private void initPunctuations() {
+		punctuations = new HashSet<Character>();
+		punctuations.add('~');
+		punctuations.add('^');
+		punctuations.add('(');
+		punctuations.add(')');
+		punctuations.add('{');
+		punctuations.add('}');
+		punctuations.add('[');
+		punctuations.add(']');
+		punctuations.add('<');
+		punctuations.add('>');
+		punctuations.add(':');
+		punctuations.add(';');
+		punctuations.add(',');
+		punctuations.add('.');
+		punctuations.add('?');
+		punctuations.add('!');
+	}
+
+	private void initBraces() {
+		braces = new HashSet<Character>();
+		braces.add('~');
+		braces.add('^');
+		braces.add('(');
+		braces.add(')');
+		braces.add('{');
+		braces.add('}');
+		braces.add('[');
+		braces.add(']');
+		braces.add('<');
+		braces.add('>');
 	}
 
 	private void initQouteSymbols() {
@@ -192,7 +207,8 @@ public class TweetPreprocessingUtils {
 	}
 
 	private void init() {
-		initPunct();
+		initPunctuations();
+		initBraces();
 		initQouteSymbols();
 		initPrefixSuffixSymbols();
 
@@ -205,13 +221,63 @@ public class TweetPreprocessingUtils {
 		init();
 	}
 
+	private void removeOriginalAuthors(char[] chars) {
+		for (int i = 0; i < chars.length; i++) {
+			if (i > chars.length - 4) {
+				return;
+			}
+			if (Character.toLowerCase(chars[i]) != 'r') {
+				continue;
+			}
+			if (Character.toLowerCase(chars[i + 1]) != 't') {
+				continue;
+			}
+			if (chars[i + 2] != ' ') {
+				continue;
+			}
+			if (chars[i + 3] != '@') {
+				continue;
+			}
+			if (i > 0) {
+				if (chars[i - 1] != ' ')
+					continue;
+			}
+			int j = i + 4;
+			while (j < chars.length) {
+				if (chars[j] == ' ')
+					break;
+				j++;
+			}
+			for (int p = i; p < j; p++) {
+				chars[p] = ' ';
+			}
+		}
+	}
+
+	private void removeNewLineAndTabCharacter(char[] chars) {
+		// System.out.printf("Before removeNewLineAndTabCharacter:\t");
+		// ptScreen(chars);
+		for (int i = 0; i < chars.length; i++) {
+			if (chars[i] == '\n') {
+				chars[i] = ' ';
+				continue;
+			} else if (chars[i] == '\r') {
+				chars[i] = ' ';
+				continue;
+			} else if (chars[i] == '\t') {
+				chars[i] = ' ';
+				continue;
+			} else {
+				continue;
+			}
+		}
+		// System.out.printf("After removeNewLineAndTabCharacter:\t");
+		// ptScreen(chars);
+	}
+
 	private boolean isURLStart(char[] chars, int i) {
 		if (i >= chars.length - 4)
 			return false;
-		if (i > 0) {
-			if (chars[i - 1] != ' ')
-				return false;
-		}
 		if (chars[i] != 'h')
 			return false;
 		if (chars[i + 1] != 't')
@@ -221,6 +287,278 @@ public class TweetPreprocessingUtils {
 		if (chars[i + 3] != 'p')
 			return false;
 		return true;
+	}
+
+	private void removePunct(char[] chars) {
+		for (int i = 0; i < chars.length; i++) {
+			if (punctuations.contains(chars[i])) {
+				if (i == 0) {// first character
+					chars[i] = ' ';
+					continue;
+				} else if (i == chars.length - 1) {// last character
+					chars[i] = ' ';
+					continue;
+				} else if (chars[i - 1] == ' ') {// first character of the word
+					chars[i] = ' ';
+					continue;
+				} else if (chars[i + 1] == ' ') {// last character of the word
+					chars[i] = ' ';
+					continue;
+				} else if (isURLStart(chars, i + 1)) {// right before url
+					chars[i] = ' ';
+					continue;
+				} else if (chars[i] == '.') {// do nothing, in case of url
+					continue;
+				} else if (chars[i] == ':') {// do nothing, in case of url
+					continue;
+				} else if (!Character.isDigit(chars[i - 1])) {
+					chars[i] = ' ';
+					continue;
+				} else if (!Character.isDigit(chars[i + 1])) {
+					chars[i] = ' ';
+					continue;
+				} else {
+					// do nothing
+					continue;
+				}
+			}
+		}
+	}
+
+	private boolean isShorten(char[] chars, int i) {
+		if (!quoteSymbols.contains(chars[i]))
+			return false;
+		if (i <= chars.length - 3) {
+			if (chars[i + 1] == 'r' && chars[i + 2] == 'e') // e.g, "they're"
+				return true;
+			if (chars[i + 1] == 'v' && chars[i + 2] == 'e') // e.g, "they've"
+				return true;
+			if (chars[i + 1] == 'l' && chars[i + 2] == 'l') // e.g, "she'll"
+				return true;
+		} else if (i <= chars.length - 2) {
+			if (chars[i + 1] == 'm') // e.g, "I'm"
+				return true;
+			if (chars[i + 1] == 'd') // e.g, "it'd"
+				return true;
+			if (chars[i + 1] == 't') // e.g, "it'd"
+				return true;
+		}
+		return false;
+	}
+
+	private void removeQuotationSymbols(char[] chars) {
+		for (int i = 0; i < chars.length; i++) {
+			if (quoteSymbols.contains(chars[i])) {
+				if (i == 0) {// first character
+					chars[i] = ' ';
+					continue;
+				} else if (i == chars.length - 1) {// last character
+					chars[i] = ' ';
+					continue;
+				} else if (chars[i - 1] == ' ') {// first character of the word
+					chars[i] = ' ';
+					continue;
+				} else if (chars[i + 1] == ' ') {// last character of the word
+					chars[i] = ' ';
+					if (chars[i - 1] == 's') { // for the case, e.g., "mothers'"
+						chars[i - 1] = ' ';
+					}
+					continue;
+				} else if (chars[i + 1] == 's') {// for the case, e.g.,
+													// "mother's"
+					chars[i] = ' ';
+					chars[i + 1] = ' ';
+				} else if (i < chars.length - 2) {
+					if (chars[i + 2] == ' ') // for the case, e.g., "don't"
+						continue;
+				} else if (isShorten(chars, i)) {
+					continue;
+				} else {
+					chars[i] = ' ';
+				}
+			}
+		}
+	}
+
+	private void removeHTMLsymbols(char[] chars) {
+		for (int i = 0; i < chars.length; i++) {
+			if (chars[i] == '&') {// html character
+				int j = i;
+				while (j < chars.length) {
+					if (chars[j] == ' ')
+						break;
+					else if (punctuations.contains(chars[j]))
+						break;
+					else if (validPrefixSymbols.contains(chars[j]))
+						break;
+					else {
+						chars[j] = ' ';
+						j++;
+					}
+				}
+				i = j;
+			}
+		}
+	}
+
+	private int getWord(char[] chars, int i) {
+		int j = i;
+		while (true) {
+			if (j >= chars.length)
+				break;
+			else if (chars[j] == ' ') {
+				break;
+			} else {
+				j++;
+			}
+		}
+		return j;
+	}
+
+	private boolean isNumber(char[] chars, int start, int end) {
+		for (int i = start; i < end; i++) {
+			if (Character.isDigit(chars[i])) {
+				continue;
+			}
+			if (chars[i] == '.') {
+				continue;
+			}
+			if (chars[i] == ',') {
+				continue;
+			}
+			return false;
+		}
+		return true;
+	}
+
+	private boolean isHour(char[] chars, int start, int end) {
+		for (int i = start; i < end; i++) {
+			if (Character.isDigit(chars[i])) {
+				continue;
+			}
+			if (chars[i] == ':') {
+				continue;
+			}
+			return false;
+		}
+		return true;
+	}
+
+	private boolean isURL(String text, int i, int j) {
+		return urlValidator.isValid(text.substring(i, j));
+	}
+
+	private boolean isEnglish(char[] chars, int start, int end) {
+		for (int i = start; i < end; i++)
+			if ((int) chars[i] > 128)
+				return false;
+		return true;
+	}
+
+	private void removeSymbolInWord(char[] chars, int start, int end) {
+		int i = end - 1;
+		while (!Character.isLetterOrDigit(chars[i])) {
+			if (validSuffixSymbols.contains(chars[i])) {
+				break;
+			}
+			chars[i] = ' ';
+			i--;
+			if (i == start)
+				return;
+		}
+
+		i = start;
+		while (!Character.isLetterOrDigit(chars[i])) {
+			if (validPrefixSymbols.contains(chars[i])) {
+				break;
+			}
+			chars[i] = ' ';
+			i++;
+			if (i == end)
+				return;
+		}
+	}
+
+	private void ptScreen(char[] chars) {
+		System.out.printf("array = [");
+		for (int i = 0; i < chars.length; i++) {
+			System.out.printf("%c", chars[i]);
+		}
+		System.out.println("]");
+	}
+
+	public List<String> newTermExtraction(String text) {
+		//System.out.printf("text = %s\n", text);
+		char[] chars = text.trim().toCharArray();
+
+		removeNewLineAndTabCharacter(chars);
+		removeOriginalAuthors(chars);
+
+		removeHTMLsymbols(chars);
+		//System.out.printf("After remove symbol:\t");
+		//ptScreen(chars);
+
+		removeQuotationSymbols(chars);
+		//System.out.printf("After remove quotation:\t");
+		//ptScreen(chars);
+
+		removePunct(chars);
+		//System.out.printf("After remove punctuations and tab:\t");
+		//ptScreen(chars);
+
+		int i = 0;
+		while (i < chars.length) {
+			int j = getWord(chars, i);
+			if (j == i) {
+				i++;
+				continue;
+			}
+			// System.out.printf("\t isNumber = %s", isNumber(chars, i, j));
+			// System.out.printf("\t isHours = %s", isHour(chars, i, j));
+			// System.out.printf("\t isURL = %s", isURL(text, i, j));
+			if (isNumber(chars, i, j)) {
+				i = j;
+			} else if (isHour(chars, i, j)) {
+				i = j;
+			} else if (isURL(text, i, j)) {
+				i = j;
+			} else if (!isEnglish(chars, i, j)) {
+				for (int p = i; p < j; p++) {
+					chars[p] = ' ';
+				}
+				i = j;
+			} else {
+				for (int p = i; p < j; p++) {
+					if (punctuations.contains(chars[p])) {
+						chars[p] = ' ';
+					} else {
+						chars[p] = Character.toLowerCase(chars[p]);
+					}
+				}
+				removeSymbolInWord(chars, i, j);
+				i = j;
+			}
+		}
+
+		List<String> terms = new ArrayList<String>();
+		i = 0;
+		while (i < chars.length) {
+			int j = getWord(chars, i);
+			if (j == i) {
+				i++;
+				continue;
+			}
+
+			String term = new String(chars, i, j - i);
+			if (!stopWords.contains(term)) {
+				//System.out.printf("\nnew-word: %s", term);
+				terms.add(terms.size(), term);
+			}
+
+			i = j;
+		}
+
+		return terms;
 	}
 
 	private String removeSymbolInText(String text) {
@@ -252,13 +590,13 @@ public class TweetPreprocessingUtils {
 					} else {
 						// System.out.println("\t\tINVALID");
 						for (int p = i; p < j; p++) {
-							if (punct.contains(chars[p])) {
+							if (punctuations.contains(chars[p])) {
 								chars[p] = ' ';
 							}
 						}
 						i = j;
 					}
-				} else if (punct.contains(chars[i])) {
+				} else if (punctuations.contains(chars[i])) {
 					chars[i] = ' ';
 					i++;
 				} else if (chars[i] == '\n') {// newline
@@ -311,7 +649,7 @@ public class TweetPreprocessingUtils {
 							break;
 						else if (chars[j] == '\\')
 							break;
-						else if (punct.contains(chars[j]))
+						else if (punctuations.contains(chars[j]))
 							break;
 						else if (validPrefixSymbols.contains(chars[j]))
 							break;
@@ -335,7 +673,7 @@ public class TweetPreprocessingUtils {
 		return null;
 	}
 
-	private static boolean isEnglish(String word) {
+	private boolean isEnglish(String word) {
 		for (int i = 0; i < word.length(); i++)
 			if ((int) word.charAt(i) > 128)
 				return false;
@@ -383,7 +721,7 @@ public class TweetPreprocessingUtils {
 	}
 
 	private String getTweetContent(String message) {
-		message = removeSymbolInText(message);
+		// message = removeSymbolInText(message);
 		// System.out.printf("after reomve symbol [[%s]]\n", message);
 		// TODO optimize this function using more efficient string utilities
 		int l = message.length();
@@ -408,6 +746,8 @@ public class TweetPreprocessingUtils {
 		String[] tokens = text.toLowerCase().split(" ");
 		for (int i = 0; i < tokens.length; i++) {
 			String term = removeSymbolInWord(tokens[i]);
+			if (term == null)
+				continue;
 			if (stopWords.contains(term)) {
 				continue;
 			}
@@ -419,8 +759,10 @@ public class TweetPreprocessingUtils {
 	}
 
 	public List<String> extractTermInTweet(String tweet) {
-		tweet = getTweetContent(tweet);
-		List<String> terms = termExtraction(tweet);
+		// System.out.printf("tweet = %s\n", tweet);
+		// tweet = getTweetContent(tweet);
+		// List<String> terms = termExtraction(tweet);
+		List<String> terms = newTermExtraction(tweet);
 		return terms;
 	}
 
@@ -440,23 +782,21 @@ public class TweetPreprocessingUtils {
 		// char a = '\u2019';
 		// System.out.println("code = " + a);
 
-		// char c = '\u2014'; // System.out.println("c = " + c);
+		// char c = '\u2026'; // System.out.println("c = " + (int) c);
 
 		TweetPreprocessingUtils nlpUtils = new TweetPreprocessingUtils();
 		// nlpUtils.checkQuoteSymbols();
 
-		nlpUtils.checkStopWordList();
+		// nlpUtils.checkStopWordList();
 
-		String message = "Interesting,Trump's https://t.co/vh1VSAUwxQ country travel ban on majority Muslim countries doesn't include the no. 1 Islamic radicalization offender:Saudi Arabia https://t.co/vh1VSAUwxQ";
-
+		String message = "RT @MattAsherS: Sessions vote may occur early. Pls call senators. We need more hearings 2 address #MuslimBan &amp; Sanc Cities XOsâ€¦ ";
+		System.out.printf("message = %s\n", message);
 		List<String> terms = nlpUtils.extractTermInTweet(message);
+
 		for (int i = 0; i < terms.size(); i++) {
-			System.out.printf("i = %d term = |%s|\n", i, terms.get(i));
+			System.out.printf("\ni = %d term = |%s|", i, terms.get(i));
 		}
 
-		String link = "https://t.co/vh1VSAUwxQ";
-		UrlValidator urlValidator = new UrlValidator();
-		System.out.printf("link = %s valid = %s\n", link, urlValidator.isValid(link));
 	}
 
 }
