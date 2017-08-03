@@ -16,7 +16,7 @@ public class LanguageModelSmoothing {
 	private static double lambda = 0.3;
 	private static double delta = 0.9;
 	private static double mu = 5000;
-	
+		
 	public String formatPrintProb(int ngram,String preTerm, String term, double preCount, double count, double prob) {
 		return String.format("n:%d,P(%s|%s) = %.0f|%.0f = %f",ngram,term,preTerm,count,preCount,prob);
 	}
@@ -69,7 +69,7 @@ public class LanguageModelSmoothing {
 		return prob;
 	}
 
-	public HashMap<String, HashMap<String, Double>> updateBgLM(String preTerm, String term, double prob,
+	public void updateBgLM(String preTerm, String term, double prob,
 			HashMap<String, HashMap<String, Double>> bgProbMap) {
 
 		HashMap<String, Double> bgTermProbMap = null;
@@ -80,7 +80,6 @@ public class LanguageModelSmoothing {
 		}
 		bgTermProbMap.put(term, prob);
 		bgProbMap.put(preTerm, bgTermProbMap);
-		return bgProbMap;
 	}
 	
 	/*
@@ -127,14 +126,13 @@ public class LanguageModelSmoothing {
 			while (iter1.hasNext()) {
 				String term = iter1.next();
 
-
 				double preTermCount = fgPreTermCountMap.get(preTerm);
 				double termCount = fgnTermCountMap.get(preTerm).get(term);
 
 				double bgProb = getBgProb(preTerm, term, bgProbMap);
 				
 				double prob = caculateProb(preTermCount, termCount, bgProb, newTermCountInFg, type);
-				bgProbMap = updateBgLM(preTerm, term, prob, bgProbMap);
+				updateBgLM(preTerm, term, prob, bgProbMap);
 				System.out.println("find in F.LM:" + formatPrintProb(Configure.nGram,preTerm,term,preTermCount,termCount,prob) + " with bgProb:" + bgProb);
 				num++;
 			}
@@ -177,12 +175,53 @@ public class LanguageModelSmoothing {
 				double bgProb = bgProbMap.get(preTerm).get(term);
 				
 				double prob = caculateProb(preTermCount, termCount, bgProb, newTermCountInFg, type);
-				bgProbMap = updateBgLM(preTerm, term, prob, bgProbMap);
+				updateBgLM(preTerm, term, prob, bgProbMap);
 				System.out.println("find in B.LM:" + formatPrintProb(Configure.nGram,preTerm,term,preTermCount,termCount,prob) + " with bgProb:" + bgProb);
 				num++;
 			}
 		}
 		System.out.println("B.LM size:" + num + " noPreTermNum:" + noPreTermNum);
+	}
+	
+	/*
+	 * To reslove the problem the sum of the prob will not be 1 after some smoothing technology, we use normalize.
+	 * 
+	 * Becasue the function traverseFgLM() and traverseBgLM() maybe ignore some term, I need traverse the bgProbMap again.
+	 */
+	public void normalizedSmoothing(HashMap<String, HashMap<String, Double>> bgProbMap) {
+		double sumProb = 0;
+		Set<String> preKeys = bgProbMap.keySet();
+		Iterator<String> preIter = preKeys.iterator();
+		while (preIter.hasNext()) {
+			String preTerm = preIter.next();
+
+			Set<String> keys = bgProbMap.get(preTerm).keySet();
+			Iterator<String> iter = keys.iterator();
+			while (iter.hasNext()) {
+				String term = iter.next();
+				sumProb += bgProbMap.get(preTerm).get(term);
+			}
+		}
+		
+		/*
+		 * if the sum of prob is closed to 1, we will not do normalize
+		 */
+		if(sumProb >= 0.9999) {
+			return;
+		}
+
+		Iterator<String> preIter1 = preKeys.iterator();
+		while (preIter1.hasNext()) {
+			String preTerm = preIter1.next();
+
+			Set<String> keys = bgProbMap.get(preTerm).keySet();
+			Iterator<String> iter = keys.iterator();
+			while (iter.hasNext()) {
+				String term = iter.next();
+				double prob = bgProbMap.get(preTerm).get(term) / sumProb;
+				updateBgLM(preTerm, term, prob, bgProbMap);
+			}
+		}
 	}
 
 	public void smoothing(HashMap<String, Double> fgPreTermCountMap,
@@ -199,5 +238,7 @@ public class LanguageModelSmoothing {
 		if(type == SmoothingType.NoSmoothing)
 			return;
 		traverseBgLM(fgPreTermCountMap,fgnTermCountMap,bgProbMap,type,newTermCountInFg);
+		
+		normalizedSmoothing(bgProbMap);
 	}
 }

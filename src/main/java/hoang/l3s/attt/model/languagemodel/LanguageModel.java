@@ -131,9 +131,6 @@ public class LanguageModel {
 	}
 
 	public void printLM(HashMap<String, HashMap<String, Double>> ngramProbMap) {
-		if (ngramProbMap == null) {
-			System.out.println("ngramProbMap == null");
-		}
 		Set<String> preKeys = ngramProbMap.keySet();
 		Iterator<String> preIter = preKeys.iterator();
 		int num = 0;
@@ -234,5 +231,4 @@ public class LanguageModel {
 	public void update(Tweet tweet) {
 
 	}
-
 }
