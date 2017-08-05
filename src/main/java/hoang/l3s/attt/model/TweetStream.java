@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.zip.GZIPInputStream;
 
 import com.google.gson.JsonObject;
@@ -23,6 +24,8 @@ public class TweetStream {
 	private BufferedReader br;
 	private JsonParser parser;
 	private SimpleDateFormat tweetDateTimeFormater;
+
+	private HashSet<String> originalTweets;
 
 	private void openFile() {
 		try {
@@ -43,6 +46,7 @@ public class TweetStream {
 		fileDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		tweetDateTimeFormater = new SimpleDateFormat("EEE MMM dd HH:mm:ss +0000 yyyy");
 		openFile();
+		originalTweets = new HashSet<String>();
 	}
 
 	public Tweet getTweet() {
@@ -66,6 +70,16 @@ public class TweetStream {
 				try {
 					JsonObject jsonTweet = (JsonObject) parser.parse(line);
 					if (jsonTweet.get("lang").getAsString().equals("en")) {
+						if (jsonTweet.has("retweeted_status")) {
+							JsonObject jsonOriginalTweet = (JsonObject) jsonTweet.get("retweeted_status");
+							String tweetId = jsonOriginalTweet.get("id_str").getAsString();
+							if (originalTweets.contains(tweetId)) {
+								line = br.readLine();
+								continue;
+							} else {
+								originalTweets.add(tweetId);
+							}
+						}
 						String tweetId = jsonTweet.get("id_str").getAsString();
 						String user = ((JsonObject) jsonTweet.get("user")).get("id").getAsString();
 						String text = jsonTweet.get("text").getAsString();
