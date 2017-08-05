@@ -14,6 +14,10 @@ public class Classifier {
 	public Classifier(List<Tweet> tweets) {
 
 	}
+	
+	public Classifier(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
+		// TODO Auto-generated constructor stub
+	}
 
 	public boolean predict(Tweet tweet) {
 		return false;
