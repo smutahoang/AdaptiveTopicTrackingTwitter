@@ -456,6 +456,10 @@ public class TweetPreprocessingUtils {
 	}
 
 	private void removeSymbolInWord(char[] chars, int start, int end) {
+
+		//ptScreen(chars);
+		//System.out.printf("\ni = %d, j = %d", start, end);
+
 		int i = end - 1;
 		while (!Character.isLetterOrDigit(chars[i])) {
 			if (validSuffixSymbols.contains(chars[i])) {
@@ -463,7 +467,7 @@ public class TweetPreprocessingUtils {
 			}
 			chars[i] = ' ';
 			i--;
-			if (i == start)
+			if (i <= start)
 				return;
 		}
 
@@ -474,7 +478,7 @@ public class TweetPreprocessingUtils {
 			}
 			chars[i] = ' ';
 			i++;
-			if (i == end)
+			if (i >= end)
 				return;
 		}
 	}
@@ -487,24 +491,24 @@ public class TweetPreprocessingUtils {
 		System.out.println("]");
 	}
 
-	public List<String> newTermExtraction(String text) {
-		//System.out.printf("text = %s\n", text);
+	private List<String> termExtraction(String text) {
+		// System.out.printf("text = %s\n", text);
 		char[] chars = text.trim().toCharArray();
 
 		removeNewLineAndTabCharacter(chars);
 		removeOriginalAuthors(chars);
 
 		removeHTMLsymbols(chars);
-		//System.out.printf("After remove symbol:\t");
-		//ptScreen(chars);
+		// System.out.printf("After remove symbol:\t");
+		// ptScreen(chars);
 
 		removeQuotationSymbols(chars);
-		//System.out.printf("After remove quotation:\t");
-		//ptScreen(chars);
+		// System.out.printf("After remove quotation:\t");
+		// ptScreen(chars);
 
 		removePunct(chars);
-		//System.out.printf("After remove punctuations and tab:\t");
-		//ptScreen(chars);
+		// System.out.printf("After remove punctuations and tab:\t");
+		// ptScreen(chars);
 
 		int i = 0;
 		while (i < chars.length) {
@@ -551,7 +555,7 @@ public class TweetPreprocessingUtils {
 
 			String term = new String(chars, i, j - i);
 			if (!stopWords.contains(term)) {
-				//System.out.printf("\nnew-word: %s", term);
+				// System.out.printf("\nnew-word: %s", term);
 				terms.add(terms.size(), term);
 			}
 
@@ -561,208 +565,9 @@ public class TweetPreprocessingUtils {
 		return terms;
 	}
 
-	private String removeSymbolInText(String text) {
-		try {
-			char[] chars = text.trim().toCharArray();
-			int i = 0;
-			while (i < chars.length) {
-				// System.out.printf("i = %d char = %c\n", i, chars[i]);
-				if (isURLStart(chars, i)) {// check url
-					int j = i + 1;
-					while (j < chars.length) {
-						if (chars[j] == ' ')
-							break;
-						if (chars[j] == '\t')
-							break;
-						if (chars[j] == '\n')
-							break;
-						if (chars[j] == '\r')
-							break;
-						j++;
-					}
-					if (j == i + 1) {
-						i++;
-						continue;
-					}
-					if (urlValidator.isValid(text.substring(i, j))) {
-						i = j;
-						// System.out.println("\t\tVALID");
-					} else {
-						// System.out.println("\t\tINVALID");
-						for (int p = i; p < j; p++) {
-							if (punctuations.contains(chars[p])) {
-								chars[p] = ' ';
-							}
-						}
-						i = j;
-					}
-				} else if (punctuations.contains(chars[i])) {
-					chars[i] = ' ';
-					i++;
-				} else if (chars[i] == '\n') {// newline
-					chars[i] = ' ';
-					i++;
-				} else if (chars[i] == '\r') {// newline
-					chars[i] = ' ';
-					i++;
-				} else if (chars[i] == '\t') {// tab
-					chars[i] = ' ';
-					i++;
-				} else if (chars[i] == '\\') {// \n or \r or \t
-					chars[i] = ' ';
-					i++;
-					if (i < chars.length) {
-						if (chars[i] == 'n') {
-							chars[i] = ' ';
-							i++;
-						} else if (chars[i] == 'r') {
-							chars[i] = ' ';
-							i++;
-						} else if (chars[i] == 't') {
-							chars[i] = ' ';
-							i++;
-						} else {
-							// do nothing
-						}
-					}
-				} else if (quoteSymbols.contains(chars[i])) {// quote
-					chars[i] = ' ';
-					i++;
-					if (i < chars.length) {
-						if (chars[i] == 's') {// 's
-							if (i < chars.length - 1) {
-								if (!Character.isLetterOrDigit(chars[i + 1])) {
-									chars[i] = ' ';
-									i++;
-								}
-							} else {
-								chars[i] = ' ';
-								i++;
-							}
-						}
-					}
-
-				} else if (chars[i] == '&') {// html character
-					int j = i;
-					while (j < chars.length) {
-						if (chars[j] == ' ')
-							break;
-						else if (chars[j] == '\\')
-							break;
-						else if (punctuations.contains(chars[j]))
-							break;
-						else if (validPrefixSymbols.contains(chars[j]))
-							break;
-						else {
-							chars[j] = ' ';
-							j++;
-						}
-					}
-					i = j;
-				} else {
-					i++;
-				}
-
-			}
-			return (new String(chars));
-		} catch (Exception e) {
-			System.out.printf("tweet = [[%s]]\n", text);
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		return null;
-	}
-
-	private boolean isEnglish(String word) {
-		for (int i = 0; i < word.length(); i++)
-			if ((int) word.charAt(i) > 128)
-				return false;
-		return true;
-	}
-
-	private String removeSymbolInWord(String word) {
-		if (!isEnglish(word)) {
-			return null;
-		}
-		int r = word.length();
-		if (r == 0)
-			return null;
-		if (word.endsWith("\u2026")) // three-dots symbol - chunked tweet
-			return null;
-		if (urlValidator.isValid(word))
-			return word;
-		char c = word.charAt(r - 1);
-		while (!Character.isLetterOrDigit(c)) {
-			if (validSuffixSymbols.contains(c)) {
-				break;
-			}
-			r--;
-			if (r == 0)
-				return null;
-			c = word.charAt(r - 1);
-		}
-		int l = 0;
-		c = word.charAt(l);
-		while (!Character.isLetterOrDigit(c)) {
-			if (validPrefixSymbols.contains(c)) {
-				break;
-			}
-			l++;
-			c = word.charAt(l);
-		}
-
-		word = word.substring(l, r);
-		if (word.startsWith("http")) {
-			if (!urlValidator.isValid(word)) {
-				return null;// broken url
-			}
-		}
-		return word;
-	}
-
-	private String getTweetContent(String message) {
-		// message = removeSymbolInText(message);
-		// System.out.printf("after reomve symbol [[%s]]\n", message);
-		// TODO optimize this function using more efficient string utilities
-		int l = message.length();
-		int p = message.indexOf("rt @");
-		if (p < 0)
-			p = message.indexOf("RT @");
-		if (p >= 0) {
-			int j = p + 4;
-			while (message.charAt(j) != ' ') {
-				j++;
-				if (j >= l) {
-					break;
-				}
-			}
-			message = message.replace(message.substring(p, j), "");
-		}
-		return message;
-	}
-
-	private List<String> termExtraction(String text) {
-		List<String> terms = new ArrayList<String>();
-		String[] tokens = text.toLowerCase().split(" ");
-		for (int i = 0; i < tokens.length; i++) {
-			String term = removeSymbolInWord(tokens[i]);
-			if (term == null)
-				continue;
-			if (stopWords.contains(term)) {
-				continue;
-			}
-			if (term != null) {
-				terms.add(terms.size(), term);
-			}
-		}
-		return terms;
-	}
-
 	public List<String> extractTermInTweet(String tweet) {
-		// System.out.printf("tweet = %s\n", tweet);
-		// tweet = getTweetContent(tweet);
-		// List<String> terms = termExtraction(tweet);
-		List<String> terms = newTermExtraction(tweet);
+		System.out.printf("tweet = [[%s]]\n", tweet);
+		List<String> terms = termExtraction(tweet);
 		return terms;
 	}
 
@@ -789,8 +594,8 @@ public class TweetPreprocessingUtils {
 
 		// nlpUtils.checkStopWordList();
 
-		String message = "RT @MattAsherS: Sessions vote may occur early. Pls call senators. We need more hearings 2 address #MuslimBan &amp; Sanc Cities XOsâ€¦ ";
-		System.out.printf("message = %s\n", message);
+		String message = "* On January 21st, 2017, White House Press Secretary Sean Spicer held a press conference largely to attack the pre /";
+		System.out.printf("message = [[%s]]\n", message);
 		List<String> terms = nlpUtils.extractTermInTweet(message);
 
 		for (int i = 0; i < terms.size(); i++) {
