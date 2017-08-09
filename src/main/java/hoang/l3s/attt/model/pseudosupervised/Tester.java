@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.SimpleFormatter;
 import java.util.zip.GZIPInputStream;
 
 import com.google.gson.JsonObject;
@@ -30,7 +31,7 @@ public class Tester {
 	private static int numOfWindowTweets = 1000;
 	private static String dateFormat  = "EEE MMM dd HH:mm:ss +0000 yyyy";
 	
-	//get positive instance
+	//get positive instances
 	static List<Tweet> getFirstTweets(String file) {
 		try {
 			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateFormat,Locale.US);
@@ -50,7 +51,7 @@ public class Tester {
 				}
 				//System.out.printf("time = |%s|\n", jsonTweet.get("created_at").getAsString());
 				long createdAt = dateTimeFormater.parse(jsonTweet.get("created_at").getAsString()).getTime();
-				Tweet tweet = new Tweet(jsonTweet.get("text").getAsString(),
+				Tweet tweet = new Tweet(jsonTweet.get("id_str").getAsString(), jsonTweet.get("text").getAsString(),
 						((JsonObject) jsonTweet.get("user")).get("id").getAsString(), createdAt);
 				firstTweets.add(tweet);
 			}
@@ -86,16 +87,28 @@ public class Tester {
 		return tweets;
 	}
 	public static void main(String[] args) {
-		Configure.getConf();
+		new Configure();
 		String startDate = "Fri Jan 27 00:31:10 +0000 2017";
-		int nExclusionTerms = 50;
-		int percentOfNegativeSamples = 80;
 		
-		//System.out.println(Configure.getFirstTweetsPath());
-		List<Tweet> firstTweets = getFirstTweets(Configure.getFirstTweetsPath());
-		List<Tweet> lastTweets = getWindowTweets(Configure.getStreamPath(), startDate);
-		PseudoSupervisedFilter filter = new PseudoSupervisedFilter(nExclusionTerms, percentOfNegativeSamples);
-		filter.init(firstTweets, lastTweets);
+		
+		try {
+			List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
+			
+			SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
+			TweetStream stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
+						
+			PseudoSupervisedFilter filter = new PseudoSupervisedFilter();
+			filter.init(firstTweets, stream);
+			
+			startDate = "Fri Jan 28 00:31:10 +0000 2017";
+			stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
+			filter.filter(stream, Configure.outputPath);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			
+		}
+		
 		
 		
 	}

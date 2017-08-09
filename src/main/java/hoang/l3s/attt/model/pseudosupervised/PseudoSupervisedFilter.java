@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -23,10 +25,11 @@ import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class PseudoSupervisedFilter extends FilteringModel {
 
-	private Classifier classifer;
+	private Classifier classifier;
 	private TweetPreprocessingUtils preprocessingUtils;
-	private int nExclusionTerms;
-	private int percentOfNegativeSamples;
+	private long publishedTimeofLastTweet;
+	private static int nExclusionTerms = 50;
+	private HashSet<String> keywords;
 	public PseudoSupervisedFilter() {
 		// TODO Auto-generated constructor stub
 	}
@@ -34,87 +37,118 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		// TODO Auto-generated method stub
 
 	}
-	public void init(List<Tweet> firstOfTweets, List<Tweet> tweetsWindow) {
+	public void init(List<Tweet> firstOfTweets, TweetStream stream) {
 		preprocessingUtils = new TweetPreprocessingUtils();
-		
-		List<Tweet> randomNegativeTweets = getRandomNegativeSamples(tweetsWindow);
-		List<String> keywords = getKeyWords(firstOfTweets, tweetsWindow);
-		List<Tweet> negativeSample = getNegativeSamples(tweetsWindow, getExcludedTweets(randomNegativeTweets, keywords));
-		classifer = new Classifier(firstOfTweets, negativeSample);
+		keywords = getKeyWords(firstOfTweets, stream);
+		List<Tweet> negativeTweets = getNegativeSamples(firstOfTweets, stream);
+		classifier = new Classifier(firstOfTweets, negativeTweets);
+	}
+	public void getPublishedTimeofLastTweets(List<Tweet> firstOfTweets) {
+		publishedTimeofLastTweet = firstOfTweets.get(0).getPublishedTime();
+		for(int i = 1; i < firstOfTweets.size(); i++) { 
+			long time = firstOfTweets.get(i).getPublishedTime();
+			if(publishedTimeofLastTweet < time)
+				publishedTimeofLastTweet = time;
+		}
+			
 	}
 	
-	public PseudoSupervisedFilter(int nExclusionTerms, int percenOfNegativeSamples) {
-		this.nExclusionTerms = nExclusionTerms;
-		this.percentOfNegativeSamples = percenOfNegativeSamples;
+	//get negative samples
+	public List<Tweet> getNegativeSamples(List<Tweet> firstOfTweets, TweetStream stream) {
+		List<Tweet> negativeSamples = new ArrayList<Tweet>();
 		
-	}
-	
-	//get random negative samples
-	public List<Tweet> getRandomNegativeSamples(List<Tweet> tweets) {
-		List<Tweet> randomNegativeSamples = new ArrayList<Tweet>();
-		for(int i = 0; i < tweets.size(); i++) {
-			while(Math.random() < percentOfNegativeSamples/100) {
-				randomNegativeSamples.add(tweets.get(i));
+		int nNegativeSamples = firstOfTweets.size() * 10;
+		int count = 0; // count the number of negative sample
+		Tweet tweet = null;
+		while((tweet = stream.getTweet()) != null) {
+			if(tweet.getPublishedTime() > publishedTimeofLastTweet) 
+				break;
+			List<String> terms = tweet.getTerms(preprocessingUtils);
+			boolean flag = true;
+			for(String term : terms) {
+				if(keywords.contains(term)) { // check if  term is one of the keyword
+					flag = false;
+					break;
+				}
+			}
+			// set the size of nagative samples to be ten times the size of positive sample
+			if(flag) {
+				if(count < nNegativeSamples) {
+					negativeSamples.add(tweet);
+					count++;
+				}
 			}
 		}
-		return randomNegativeSamples;
-	}
-	//get negative samples
-	public List<Tweet> getNegativeSamples(List<Tweet> tweets, List<Tweet> excludedTweets) {
-		List<Tweet> negativeSamples = (ArrayList<Tweet>) tweets;
-		for(Tweet t: excludedTweets) 
-			negativeSamples.remove(t);
 		return negativeSamples;
 	}
 	
 	//get tfIdf of all terms
-	public HashMap<String, Double> gettfIdfTermsMap(List<Tweet> firstOfTweets, List<Tweet> tweetsWindow) {
+	public HashMap<String, Double> gettfIdfTermsMap(List<Tweet> firstOfTweets, TweetStream stream) {
 		HashMap<String, Double>  tfIdfTermsMap = new HashMap<String, Double>();
-		int nTweets = firstOfTweets.size();
+		HashMap<String, Double> tfTermsMap = new HashMap<String, Double>();
+		HashMap<String, Double> idfTermsMap = new HashMap<String, Double>();
+		
+		int nFirstTweets = firstOfTweets.size();
 		int totalFirstTerms = 0;
+		int nRandomTweets = 0;
 		
 		//get tf
-		for(int i = 0; i< nTweets; i++) {
+		for(int i = 0; i< nFirstTweets; i++) {
 			List<String> terms = firstOfTweets.get(i).getTerms(preprocessingUtils);
 			int len = terms.size();
 			for(int j = 0; j<len; j++) {
 				String word = terms.get(j);
-				if(!tfIdfTermsMap.containsKey(word)) 
-					tfIdfTermsMap.put(word, 1.0);
+				if(!tfTermsMap.containsKey(word)) 
+					tfTermsMap.put(word, 1.0);
 				else {
-					double count = tfIdfTermsMap.get(word);
-					tfIdfTermsMap.put(word, count + 1.0);
+					double count = tfTermsMap.get(word);
+					tfTermsMap.put(word, count + 1.0);
 				}
 				totalFirstTerms++;
 			}
 		}
 		
 		//get tf-idf
-		Set<String> keys = tfIdfTermsMap.keySet();
-		Iterator<String> iter = keys.iterator();
-		int nTweetsWindow = tweetsWindow.size();
-		while (iter.hasNext()) {
-			String term = iter.next();
-			//System.out.println(term);
-			int countTweets = 0;
-			for(Tweet tweet: tweetsWindow) {
-				if(tweet.getTerms(preprocessingUtils).contains(term))
-					countTweets++;
+		Tweet tweet = null;
+		while((tweet = stream.getTweet()) != null) {
+			if(tweet.getPublishedTime() > publishedTimeofLastTweet) 
+				break;
+			nRandomTweets++;
+			List<String>  terms = tweet.getTerms(preprocessingUtils);
+			for(String term: terms) {
+				if(!tfTermsMap.containsKey(term))
+					continue;
+				if(idfTermsMap.containsKey(term)) {
+					double count = idfTermsMap.get(term);
+					idfTermsMap.put(term, count + 1.0);
+				} else
+					idfTermsMap.put(term, 1.0);
 			}
-			double tfTerm = tfIdfTermsMap.get(term);
-			//System.out.println(countTweets);
-			tfIdfTermsMap.put(term, (tfTerm/totalFirstTerms) * Math.log(nTweetsWindow/countTweets));
 		}
 		
-		
+		//get tf-idf
+		Set<String> keys = tfTermsMap.keySet();
+		Iterator<String> iter = keys.iterator();
+		while (iter.hasNext()) {
+			String term = iter.next();
+			double tf = tfTermsMap.get(term);
+			
+			//check if a term dont appear in any tweets?
+			if(idfTermsMap.containsKey(term)) {
+				double idf = idfTermsMap.get(term);
+				tfIdfTermsMap.put(term, (tf/totalFirstTerms) * Math.log(nRandomTweets/idf));
+			}
+			
+		}
 		return tfIdfTermsMap;
 	}
 	
 	
 	//get set of keywords E
-	public List<String> getKeyWords(List<Tweet> firstOfTweets, List<Tweet> tweetsWindow)  {
-		List<String> keywords = new ArrayList();
-		HashMap<String, Double> tfIdfTermsMap = gettfIdfTermsMap(firstOfTweets, tweetsWindow);
+	public HashSet<String> getKeyWords(List<Tweet> firstOfTweets, TweetStream stream)  {
+		HashSet<String> keywords = new HashSet<String>();
+		
+		HashMap<String, Double> tfIdfTermsMap = gettfIdfTermsMap(firstOfTweets, stream);
 	
 		List list = new LinkedList(tfIdfTermsMap.entrySet());
 	       // Defined Custom Comparator here
@@ -158,7 +192,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		// TODO Auto-generated method stub
 
 	}
-
+	
 	public void filter(TweetStream stream, String ouputPath) {
 		BufferedWriter out = null;
 		try {
@@ -167,16 +201,18 @@ public class PseudoSupervisedFilter extends FilteringModel {
 				file.delete();
 			}
 			out = new BufferedWriter(new FileWriter(file, true));
-			while (true) {
-				Tweet tweet = stream.getTweet();
-
-				double relevantScore = relevantScore(tweet);
-				
-				if (relevantScore > 0.5) {
+			Tweet tweet = null;
+			while ((tweet = stream.getTweet()) != null) {
+				String result = classifier.classify(tweet);
+				if (result.equalsIgnoreCase("relevant")) {
 					out.write(tweet.getText());
 					out.write('\n');
 				}
 				//check if is the update time for update
+//				long date = tweet.getPublisshedTime(); 
+//				if(date > publishedTimeofLastTweet) {
+//					keywords = getKeyWords(firstOfTweets, stream)
+//				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
