@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.SimpleFormatter;
 import java.util.zip.GZIPInputStream;
 
 import com.google.gson.JsonObject;
@@ -27,10 +28,10 @@ import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
 
 public class Tester {
-	private static int numOfWindowTweets = 1000;
+	//private static int numOfWindowTweets = 1000;
 	private static String dateFormat  = "EEE MMM dd HH:mm:ss +0000 yyyy";
 	
-	//get positive instance
+	//get positive instances
 	static List<Tweet> getFirstTweets(String file) {
 		try {
 			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateFormat,Locale.US);
@@ -50,7 +51,7 @@ public class Tester {
 				}
 				//System.out.printf("time = |%s|\n", jsonTweet.get("created_at").getAsString());
 				long createdAt = dateTimeFormater.parse(jsonTweet.get("created_at").getAsString()).getTime();
-				Tweet tweet = new Tweet(jsonTweet.get("text").getAsString(),
+				Tweet tweet = new Tweet(jsonTweet.get("id_str").getAsString(), jsonTweet.get("text").getAsString(),
 						((JsonObject) jsonTweet.get("user")).get("id").getAsString(), createdAt);
 				firstTweets.add(tweet);
 			}
@@ -64,38 +65,50 @@ public class Tester {
 		return null;
 	}
 
-	// get all tweets in W_window
-	static List<Tweet> getWindowTweets(String file, String startDate) {
-		List<Tweet> tweets = new ArrayList<Tweet>();
+//	// get all tweets in W_window
+//	static List<Tweet> getWindowTweets(String file, String startDate) {
+//		List<Tweet> tweets = new ArrayList<Tweet>();
+//		try {
+//			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateFormat,Locale.US);
+//			TweetStream stream = new TweetStream(file, dateTimeFormater.parse(startDate));
+//			Tweet t;
+//			while(tweets.size() < numOfWindowTweets) {
+//				// check null or not before adding 
+//				t = stream.getTweet();
+//				if(t != null)
+//					tweets.add(t);
+//			}
+//		} catch (ParseException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//			System.exit(-1);
+//		}
+//		
+//		return tweets;
+//	}
+	public static void main(String[] args) {
+		new Configure();
+		String startDate = "Fri Jan 27 00:31:10 +0000 2017";
+		
+		
 		try {
-			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateFormat,Locale.US);
-			TweetStream stream = new TweetStream(file, dateTimeFormater.parse(startDate));
-			Tweet t;
-			while(tweets.size() < numOfWindowTweets) {
-				// check null or not before adding 
-				t = stream.getTweet();
-				if(t != null)
-					tweets.add(t);
-			}
+			List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
+			
+			SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
+			TweetStream stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
+						
+			PseudoSupervisedFilter filter = new PseudoSupervisedFilter();
+			filter.init(firstTweets, stream);
+			
+			startDate = "Fri Jan 28 00:31:10 +0000 2017";
+			stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
+			filter.filter(stream, Configure.outputPath);
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-			System.exit(-1);
+			
 		}
 		
-		return tweets;
-	}
-	public static void main(String[] args) {
-		Configure.getConf();
-		String startDate = "Fri Jan 27 00:31:10 +0000 2017";
-		int nExclusionTerms = 50;
-		int percentOfNegativeSamples = 80;
-		
-		//System.out.println(Configure.getFirstTweetsPath());
-		List<Tweet> firstTweets = getFirstTweets(Configure.getFirstTweetsPath());
-		List<Tweet> lastTweets = getWindowTweets(Configure.getStreamPath(), startDate);
-		PseudoSupervisedFilter filter = new PseudoSupervisedFilter(nExclusionTerms, percentOfNegativeSamples);
-		filter.init(firstTweets, lastTweets);
 		
 		
 	}
