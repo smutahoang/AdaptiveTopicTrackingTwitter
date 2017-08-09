@@ -142,7 +142,7 @@ public class Classifier {
 					break;
 				}
 		}
-		System.out.println(terms+"\n"+attributes+"\n"+ ((double) (terms.size()-count)/terms.size()));
+		//System.out.println(terms+"\n"+attributes+"\n"+ ((double) (terms.size()-count)/terms.size()));
 		instance.setValue(attributes.get(attributes.size() - 2), ((double) (terms.size()-count)/terms.size()));
 	}
 	
