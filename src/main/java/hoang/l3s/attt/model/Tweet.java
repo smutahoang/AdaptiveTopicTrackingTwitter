@@ -11,7 +11,7 @@ public class Tweet {
 	private String user;
 	private long created_At;
 
-	private boolean verbose = true;
+	private boolean verbose = false;
 
 	private List<String> terms;
 

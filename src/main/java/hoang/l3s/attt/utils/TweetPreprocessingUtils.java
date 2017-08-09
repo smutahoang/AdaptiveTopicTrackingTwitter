@@ -566,7 +566,7 @@ public class TweetPreprocessingUtils {
 	}
 
 	public List<String> extractTermInTweet(String tweet) {
-		System.out.printf("tweet = [[%s]]\n", tweet);
+		//System.out.printf("tweet = [[%s]]\n", tweet);
 		List<String> terms = termExtraction(tweet);
 		return terms;
 	}

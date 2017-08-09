@@ -49,6 +49,19 @@ public class TweetStream {
 		originalTweets = new HashSet<String>();
 	}
 
+	/***
+	 * check if tweet is valid by manually identified rules
+	 * 
+	 * @param text
+	 * @return
+	 */
+	private boolean isValidTweet(String text) {
+		if (text.startsWith("I liked a @YouTube video")) {
+			return false;
+		}
+		return true;
+	}
+
 	public Tweet getTweet() {
 		try {
 			String line = br.readLine();
@@ -83,6 +96,10 @@ public class TweetStream {
 						String tweetId = jsonTweet.get("id_str").getAsString();
 						String user = ((JsonObject) jsonTweet.get("user")).get("id").getAsString();
 						String text = jsonTweet.get("text").getAsString();
+						if (!isValidTweet(text)) {
+							line = br.readLine();
+							continue;
+						}
 						long createdAt = tweetDateTimeFormater.parse(jsonTweet.get("created_at").getAsString())
 								.getTime();
 						tweet = new Tweet(tweetId, text, user, createdAt);
