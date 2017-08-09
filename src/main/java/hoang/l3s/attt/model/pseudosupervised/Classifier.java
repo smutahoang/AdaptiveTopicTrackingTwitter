@@ -135,15 +135,14 @@ public class Classifier {
 		
 		
 		int count = 0;
+		
+		
 		for(String term: terms) {
-			for(Attribute att: attributes)
-				if(att.name().equalsIgnoreCase(term)) {
-					count++;
-					break;
-				}
+			if(!attributes.contains(new Attribute(term))) 
+				count++;
 		}
-		//System.out.println(terms+"\n"+attributes+"\n"+ ((double) (terms.size()-count)/terms.size()));
-		instance.setValue(attributes.get(attributes.size() - 2), ((double) (terms.size()-count)/terms.size()));
+	
+		instance.setValue(attributes.get(attributes.size() - 2), ((double) count/terms.size()));
 	}
 	
 	// get class of a new instance
