@@ -28,7 +28,7 @@ import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
 
 public class Tester {
-	private static int numOfWindowTweets = 1000;
+	//private static int numOfWindowTweets = 1000;
 	private static String dateFormat  = "EEE MMM dd HH:mm:ss +0000 yyyy";
 	
 	//get positive instances
@@ -65,27 +65,27 @@ public class Tester {
 		return null;
 	}
 
-	// get all tweets in W_window
-	static List<Tweet> getWindowTweets(String file, String startDate) {
-		List<Tweet> tweets = new ArrayList<Tweet>();
-		try {
-			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateFormat,Locale.US);
-			TweetStream stream = new TweetStream(file, dateTimeFormater.parse(startDate));
-			Tweet t;
-			while(tweets.size() < numOfWindowTweets) {
-				// check null or not before adding 
-				t = stream.getTweet();
-				if(t != null)
-					tweets.add(t);
-			}
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.exit(-1);
-		}
-		
-		return tweets;
-	}
+//	// get all tweets in W_window
+//	static List<Tweet> getWindowTweets(String file, String startDate) {
+//		List<Tweet> tweets = new ArrayList<Tweet>();
+//		try {
+//			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateFormat,Locale.US);
+//			TweetStream stream = new TweetStream(file, dateTimeFormater.parse(startDate));
+//			Tweet t;
+//			while(tweets.size() < numOfWindowTweets) {
+//				// check null or not before adding 
+//				t = stream.getTweet();
+//				if(t != null)
+//					tweets.add(t);
+//			}
+//		} catch (ParseException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//			System.exit(-1);
+//		}
+//		
+//		return tweets;
+//	}
 	public static void main(String[] args) {
 		new Configure();
 		String startDate = "Fri Jan 27 00:31:10 +0000 2017";
