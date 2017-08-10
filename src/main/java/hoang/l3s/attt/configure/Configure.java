@@ -5,7 +5,7 @@ import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
 public class Configure {
 
 	public enum Author {
-		hoang, ren
+		hoang, ren, nguyen
 	}
 
 	public enum UpdateType {
@@ -31,9 +31,14 @@ public class Configure {
 
 	public Configure() {
 		if (author == Author.hoang) {
-			dirPath = "/home/hoang/attt";
-			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
-		} else {
+			// dirPath = "/home/hoang/attt";
+			dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+		} else if (author == Author.nguyen) {
+			// dirPath = "/home/hoang/attt";
+			dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+		}
+
+		else {
 			if (runningOnLocal) {
 				dirPath = "/Users/renlipeng/Documents/topicTracking";
 			} else {

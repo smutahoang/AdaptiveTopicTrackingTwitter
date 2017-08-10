@@ -106,7 +106,7 @@ public class Classifier {
 					int count = countTermMaps.get(term);
 					
 					//only get 
-					if(count == thresold) {
+					if(count == thresold) {//should increase "count" before checking
 						attributes.add(new Attribute(term, nAttributes));
 						nAttributes++;
 					}
@@ -114,7 +114,8 @@ public class Classifier {
 				}
 			}
 		}
-		attributes.add(new Attribute("miss", nAttributes));
+		attributes.add(new Attribute("miss", nAttributes));// what if one of the above "term" is "miss"??
+		//[[MISS_FEATURE]]
 		ArrayList<String> classAtt = new ArrayList<String>();
 		classAtt.add("relevant");
 		classAtt.add("nonrelevant");
