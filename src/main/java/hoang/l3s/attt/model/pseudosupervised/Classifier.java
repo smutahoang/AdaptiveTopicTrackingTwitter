@@ -1,25 +1,17 @@
 package hoang.l3s.attt.model.pseudosupervised;
 
-import java.io.FileNotFoundException;
+
 import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Formatter;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
-import weka.core.DenseInstance;
-import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
-import weka.core.pmml.jaxbbindings.SupportVectorMachine;
-import weka.gui.beans.DataSetEvent;
 
 public class Classifier {
 
@@ -97,29 +89,39 @@ public class Classifier {
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		HashMap<String, Integer> countTermMaps = new HashMap<String, Integer>();
 		int nAttributes = 0;
+		
+		
+//		for(Tweet tweet: positiveSamples) {
+//			List<String> terms = tweet.getTerms(preprocessingUtils);
+//			for(String term: terms) {
+//				if(!countTermMaps.containsKey(term))
+//					countTermMaps.put(term, 1);
+//				else {
+//					int count = countTermMaps.get(term);
+//					
+//					//only get 
+//					if(count == thresold) {//should increase "count" before checking
+//						attributes.add(new Attribute(term, nAttributes));
+//						nAttributes++;
+//					}
+//					countTermMaps.put(term, count+1);
+//				}
+//			}
+//		}
+		
 		for(Tweet tweet: positiveSamples) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			for(String term: terms) {
-				if(!countTermMaps.containsKey(term))
-					countTermMaps.put(term, 1);
-				else {
-					int count = countTermMaps.get(term);
-					
-					//only get 
-					if(count == thresold) {//should increase "count" before checking
-						attributes.add(new Attribute(term, nAttributes));
-						nAttributes++;
-					}
-					countTermMaps.put(term, count+1);
-				}
+				attributes.add(new Attribute(term, nAttributes));
+				nAttributes++;
 			}
 		}
-		attributes.add(new Attribute("miss", nAttributes));// what if one of the above "term" is "miss"??
+		attributes.add(new Attribute("MISS_ATT", nAttributes));// what if one of the above "term" is "miss"??
 		//[[MISS_FEATURE]]
 		ArrayList<String> classAtt = new ArrayList<String>();
 		classAtt.add("relevant");
 		classAtt.add("nonrelevant");
-		attributes.add(new Attribute("Class", classAtt, nAttributes+1));
+		attributes.add(new Attribute("CLASS_ATT", classAtt, nAttributes+1));
 		return attributes;
 	}
 
