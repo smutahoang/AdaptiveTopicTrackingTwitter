@@ -69,8 +69,13 @@ public class LanguageModelBasedFilter extends FilteringModel {
 		if(updateBuffer.size() >= Configure.queueCapacity) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
 			filter.trainLM(updateBuffer,Configure.smoothingType);
-			for (int i = 0; i < Configure.updateBufferCapacity; i++) {
-				updateBuffer.remove(0);
+			
+			int size = updateBuffer.size();
+			for (int i = 0; i < size - Configure.updateBufferCapacity; i++) {
+				updateBuffer.set(i, updateBuffer.get(i + Configure.updateBufferCapacity));
+			}
+			for (int i = 0; i < Configure.updateBufferCapacity; i ++) {
+				updateBuffer.remove(Configure.queueCapacity - i - 1);
 			}
 		}
 	}
