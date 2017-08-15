@@ -12,15 +12,17 @@ import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModel {
 
-	private static String placeholderKey = "unigram";
+	private String placeholderKey = "[[UNIGRAM]]";
 
 	private int nGram;
 
-	private HashMap<String, Double> preTermCountMap; // HashMap<preTerm, count>
-	private HashMap<String, HashMap<String, Double>> nTermCountMap; // HashMap<preTerm, HashMap<term, count>>
+	private HashMap<String, Integer> preTermCountMap; // HashMap<preTerm, count>
+	private HashMap<String, HashMap<String, Integer>> nTermCountMap; // HashMap<preTerm,
+																		// HashMap<term,
+																		// count>>
 
 	private TweetPreprocessingUtils preprocessingUtils;
-	private LanguageModelSmoothing smoothing;
+	private LanguageModelSmoothing smoother;
 	private HashMap<String, HashMap<String, Double>> bgProbMap;
 
 	/***
@@ -28,12 +30,11 @@ public class LanguageModel {
 	 * 
 	 * @param tweets
 	 */
-	public LanguageModel(int _ngram, TweetPreprocessingUtils _preprocessingUtils, LanguageModelSmoothing _smoothing,
-			HashMap<String, HashMap<String, Double>> _bgProbMap) {
-		this.nGram = _ngram;
+	public LanguageModel(int _nGram, TweetPreprocessingUtils _preprocessingUtils, LanguageModelSmoothing _smoother) {
+		this.nGram = _nGram;
 		this.preprocessingUtils = _preprocessingUtils;
-		this.smoothing = _smoothing;
-		this.bgProbMap = _bgProbMap;
+		this.smoother = _smoother;
+		this.bgProbMap = new HashMap<String, HashMap<String, Double>>();
 	}
 
 	/*
@@ -51,36 +52,36 @@ public class LanguageModel {
 			String term = terms.get(j + k);
 
 			if (preTermCountMap.containsKey(preTerm.toString())) {
-				double preCnt = preTermCountMap.get(preTerm.toString());
-				preTermCountMap.put(preTerm.toString(), preCnt + 1.0);
+				int preCnt = preTermCountMap.get(preTerm.toString());
+				preTermCountMap.put(preTerm.toString(), preCnt + 1);
 
-				HashMap<String, Double> termCountMap = nTermCountMap.get(preTerm.toString());
+				HashMap<String, Integer> termCountMap = nTermCountMap.get(preTerm.toString());
 				if (termCountMap != null) {
 					if (termCountMap.containsKey(term)) {
-						double cnt = termCountMap.get(term);
-						termCountMap.put(term, cnt + 1.0);
+						int count = termCountMap.get(term);
+						termCountMap.put(term, count + 1);
 					} else {
-						termCountMap.put(term, 1.0);
+						termCountMap.put(term, 1);
 					}
 				} else {
-					termCountMap = new HashMap<String, Double>();
-					termCountMap.put(term, 1.0);
+					termCountMap = new HashMap<String, Integer>();
+					termCountMap.put(term, 1);
 				}
 
 				nTermCountMap.put(preTerm.toString(), termCountMap);
 			} else {
-				preTermCountMap.put(preTerm.toString(), 1.0);
+				preTermCountMap.put(preTerm.toString(), 1);
 
-				HashMap<String, Double> termCountMap = new HashMap<String, Double>();
-				termCountMap.put(term, 1.0);
+				HashMap<String, Integer> termCountMap = new HashMap<String, Integer>();
+				termCountMap.put(term, 1);
 				nTermCountMap.put(preTerm.toString(), termCountMap);
 			}
 		}
 	}
 
 	public void getNgramCount(List<Tweet> tweets) {
-		preTermCountMap = new HashMap<String, Double>();
-		nTermCountMap = new HashMap<String, HashMap<String, Double>>();
+		preTermCountMap = new HashMap<String, Integer>();
+		nTermCountMap = new HashMap<String, HashMap<String, Integer>>();
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
@@ -89,8 +90,8 @@ public class LanguageModel {
 	}
 
 	public void getUnigramCount(List<Tweet> tweets) {
-		HashMap<String, Double> unigramCountMap = new HashMap<String, Double>();
-		double totalCount = 0;
+		HashMap<String, Integer> unigramCountMap = new HashMap<String, Integer>();
+		int totalCount = 0;
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
@@ -98,34 +99,35 @@ public class LanguageModel {
 			for (int j = 0; j < len; j++) {
 				String term = terms.get(j);
 				if (!unigramCountMap.containsKey(term)) {
-					unigramCountMap.put(term, 1.0);
+					unigramCountMap.put(term, 1);
 				} else {
-					double count = unigramCountMap.get(term);
-					unigramCountMap.put(term, count + 1.0);
+					int count = unigramCountMap.get(term);
+					unigramCountMap.put(term, count + 1);
 				}
 				totalCount++;
 			}
 		}
 		/*
-		 * To use the same smoothing technology, we make the same format of unigram as
-		 * ngram, the method is to add an placeholder key as the preWord of unigram, and
-		 * consider the totalcount of pre as the preWord's count
+		 * To use the same smoothing technology, we make the same format of
+		 * unigram as ngram, the method is to add an placeholder key as the
+		 * preWord of unigram, and consider the totalcount of pre as the
+		 * preWord's count
 		 */
-		preTermCountMap = new HashMap<String, Double>();
-		nTermCountMap = new HashMap<String, HashMap<String, Double>>();
+		preTermCountMap = new HashMap<String, Integer>();
+		nTermCountMap = new HashMap<String, HashMap<String, Integer>>();
 		preTermCountMap.put(placeholderKey, totalCount);
 		nTermCountMap.put(placeholderKey, unigramCountMap);
 
 	}
 
-	public void trainLM(List<Tweet> tweets, SmoothingType type) {
+	public void trainLM(List<Tweet> tweets, SmoothingType smoothingType) {
 		if (nGram == 1) {
 			getUnigramCount(tweets);
 		} else {
 			getNgramCount(tweets);
 		}
 
-		this.smoothing.smoothing(preTermCountMap, nTermCountMap, bgProbMap, type);
+		this.smoother.smoothing(preTermCountMap, nTermCountMap, bgProbMap, smoothingType);
 
 		printLM(bgProbMap);
 	}
@@ -152,7 +154,7 @@ public class LanguageModel {
 				}
 				double prob = termProbMap.get(term);
 
-				System.out.println(smoothing.formatPrintProb(this.nGram, preTerm, term, preCount, count, prob));
+				System.out.println(smoother.formatPrintProb(this.nGram, preTerm, term, preCount, count, prob));
 
 				num++;
 				sum += prob;
@@ -173,7 +175,9 @@ public class LanguageModel {
 				preTerm.append(placeholderKey);
 			} else {
 				for (int j = 0; j < nGram - 1; j++) {
-					preTerm.append(terms.get(i + j) + " ");
+					// preTerm.append(terms.get(i + j) + " ");
+					preTerm.append(terms.get(i + j));
+					preTerm.append(" ");
 				}
 			}
 
@@ -210,7 +214,8 @@ public class LanguageModel {
 		for (int i = 0; i < count; i++) {
 			double pro = probList.get(i);
 			sum += Math.log(pro) / Math.log(2);
-			// System.out.print("a pro:" + pro + " log:" + Math.log(pro) / Math.log(2) + "
+			// System.out.print("a pro:" + pro + " log:" + Math.log(pro) /
+			// Math.log(2) + "
 			// sum:" + sum + "\n");
 		}
 

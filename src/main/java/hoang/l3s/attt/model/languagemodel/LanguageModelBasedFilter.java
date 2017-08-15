@@ -17,23 +17,21 @@ public class LanguageModelBasedFilter extends FilteringModel {
 	private LanguageModel filter;
 	private int nGram;
 	private TweetPreprocessingUtils preprocessingUtils;
-	private HashMap<String, HashMap<String, Double>> bgProbMap;
+	// private HashMap<String, HashMap<String, Double>> bgProbMap;
 	private LanguageModelSmoothing smoothing;
 	private List<Tweet> updateBuffer;
 
-
-	public LanguageModelBasedFilter(int ngram) {
-		nGram = ngram;
+	public LanguageModelBasedFilter(int _nGram) {
+		nGram = _nGram;
 	}
 
 	public void init(List<Tweet> tweets) {
-		// TODO Auto-generated method stub
 		preprocessingUtils = new TweetPreprocessingUtils();
 		smoothing = new LanguageModelSmoothing();
-		bgProbMap = new HashMap<String, HashMap<String, Double>>();
-		filter = new LanguageModel(nGram, preprocessingUtils,smoothing,bgProbMap);
+		// bgProbMap = new HashMap<String, HashMap<String, Double>>();
+		filter = new LanguageModel(nGram, preprocessingUtils, smoothing);
 		updateBuffer = new ArrayList<Tweet>();
-		filter.trainLM(tweets,SmoothingType.NoSmoothing);
+		filter.trainLM(tweets, SmoothingType.NoSmoothing);
 	}
 
 	public double relevantScore(Tweet tweet) {
@@ -59,37 +57,44 @@ public class LanguageModelBasedFilter extends FilteringModel {
 
 		if (updateBuffer.size() >= Configure.updateBufferCapacity) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
-			filter.trainLM(updateBuffer,Configure.smoothingType);
+			filter.trainLM(updateBuffer, Configure.smoothingType);
 			updateBuffer.removeAll(updateBuffer);
 		}
 	}
 
 	public void updataQueue(Tweet tweet) {
 		updateBuffer.add(tweet);
-		if(updateBuffer.size() >= Configure.queueCapacity) {
+		if (updateBuffer.size() >= Configure.queueCapacity) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
-			filter.trainLM(updateBuffer,Configure.smoothingType);
+			filter.trainLM(updateBuffer, Configure.smoothingType);
+			// for (int i = 0; i < Configure.updateBufferCapacity; i++) {
+			// updateBuffer.remove(0);
+			// }
+			int n = Configure.queueCapacity - Configure.updateBufferCapacity;
+			for (int i = 0; i < n; i++) {
+				updateBuffer.set(i, updateBuffer.get(i + Configure.updateBufferCapacity));
+			}
 			for (int i = 0; i < Configure.updateBufferCapacity; i++) {
-				updateBuffer.remove(0);
+				updateBuffer.remove(Configure.queueCapacity - i - 1);
 			}
 		}
 	}
-	
-	public void filter(TweetStream stream, String ouputPath) {
+
+	public void filter(TweetStream stream, String outputPath) {
 		// TODO Auto-generated method stub
 
-		File file = new File(ouputPath);
+		File file = new File(outputPath);
 		if (file.exists()) {
 			file.delete();
 		}
-
+		String filteredTweetFile = String.format("%s/language_model/filteredTweets.txt", outputPath);
 		Tweet tweet = null;
 		while ((tweet = stream.getTweet()) != null) {
 
 			double perplexity = filter.getPerplexity(tweet);
-			
+
 			if (perplexity > 0 && perplexity <= Configure.perplexityThreshold) {
-				outputTweet(tweet, ouputPath);
+				outputTweet(tweet, filteredTweetFile);
 				update(tweet);
 			}
 		}
