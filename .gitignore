@@ -54,7 +54,9 @@ data/
 src_backup/
 target/
 src/main/java/hoang/l3s/attt/evaluation
-src/main/java/hoang/l3s/attt/model/graphbased
+src/main/java/hoang/l3s/attt/model/graphbased/GraphBasedFilter.java
+src/main/java/hoang/l3s/attt/model/graphbased/Term.java
+src/main/java/hoang/l3s/attt/model/graphbased/TermGraph.java
 src/main/java/hoang/l3s/attt/utils/RankingUtils.java
 src/main/java/hoang/l3s/attt/utils/StatTool.java
 src/main/java/hoang/l3s/attt/utils/WeightedElement.java

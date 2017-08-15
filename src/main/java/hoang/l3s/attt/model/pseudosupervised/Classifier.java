@@ -2,6 +2,7 @@ package hoang.l3s.attt.model.pseudosupervised;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 
 import hoang.l3s.attt.model.Tweet;
@@ -19,6 +20,9 @@ public class Classifier {
 	 * 
 	 * @param tweets
 	 */
+
+	// private static int thresold = 10; // only terms appear more than 10 times
+	// as the features
 	// private static int thresold = 10; // only terms appear more than 10 times
 	// as the features
 	private TweetPreprocessingUtils preprocessingUtils;
@@ -64,6 +68,7 @@ public class Classifier {
 	// get list of instances
 	public ArrayList<Instance> getListOfInstances(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
 		ArrayList<Instance> instances = new ArrayList<Instance>();
+
 		int nOfInstances = positiveSamples.size() + negativeSamples.size();
 		int nOfAttributes = attributes.size();
 
@@ -83,7 +88,6 @@ public class Classifier {
 			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
 			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), "nonrelevant");
 		}
-
 		return instances;
 	}
 
@@ -92,25 +96,8 @@ public class Classifier {
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		// HashMap<String, Integer> countTermMaps = new HashMap<String,
 		// Integer>();
+		
 		int nAttributes = 0;
-
-		// for(Tweet tweet: positiveSamples) {
-		// List<String> terms = tweet.getTerms(preprocessingUtils);
-		// for(String term: terms) {
-		// if(!countTermMaps.containsKey(term))
-		// countTermMaps.put(term, 1);
-		// else {
-		// int count = countTermMaps.get(term);
-		//
-		// //only get
-		// if(count == thresold) {//should increase "count" before checking
-		// attributes.add(new Attribute(term, nAttributes));
-		// nAttributes++;
-		// }
-		// countTermMaps.put(term, count+1);
-		// }
-		// }
-		// }
 
 		HashSet<String> termSet = new HashSet<String>();
 
@@ -122,17 +109,18 @@ public class Classifier {
 				if (!termSet.contains(term)) {
 					attributes.add(new Attribute(term, nAttributes));
 					termSet.add(term);
-					nAttributes++;
 				}
 			}
 		}
+		// HashMap<String, Integer> countTermMaps = new HashMap<String,
+		// Integer>();
+
 		// Tuan-Anh: avoid hard code
 		attributes.add(new Attribute(MISS_ATTRIBUTE, nAttributes));// what if
 																	// one of
 																	// the above
 																	// "term" is
 																	// "miss"??
-		// [[MISS_FEATURE]]
 		ArrayList<String> classAtt = new ArrayList<String>();
 
 		// Tuan-Anh: avoid hard code
@@ -143,6 +131,7 @@ public class Classifier {
 	}
 
 	// extract feature structure of a tweet
+
 	public void getInstance(Tweet tweet, Instance instance) {
 		List<String> terms = tweet.getTerms(preprocessingUtils);
 		for (int j = 0; j < attributes.size() - 1; j++) {

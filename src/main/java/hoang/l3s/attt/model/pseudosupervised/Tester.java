@@ -20,7 +20,8 @@ import hoang.l3s.attt.model.languagemodel.LanguageModelBasedFilter;
 import hoang.l3s.attt.model.pseudosupervised.PseudoSupervisedFilter;
 
 public class Tester {
-	private static String dateFormat  = "EEE MMM dd HH:mm:ss +0000 yyyy";
+	private static String dateFormat = "EEE MMM dd HH:mm:ss +0000 yyyy";
+
 	static List<Tweet> getFirstTweets(String file) {
 		try {
 			String dateformat = "EEE MMM dd HH:mm:ss +0000 yyyy";
@@ -78,7 +79,7 @@ public class Tester {
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			TweetStream stream = new TweetStream(streamPath, dateFormat.parse(startDate));
 
-			//filteringModel = new GraphBasedFilter();
+			// filteringModel = new GraphBasedFilter();
 
 			filteringModel.init(firstTweets);
 			filteringModel.filter(stream, outputPath);
@@ -123,27 +124,26 @@ public class Tester {
 			// System.out.println("running time： " + (endTime - startTime) +
 			// "ms");
 			break;
-		
+
 		case nguyen:
 
 			String startDate = "Fri Jan 27 00:31:10 +0000 2017";
 			String windowTweetsPath = "/home/hoang/attt/data/firstWindow/travel_ban.txt";
-			String output ="/home/hoang/attt/hnt.txt";
-			
+			String output = "/home/hoang/attt/hnt.txt";
+
 			try {
-				List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);				
+
+				List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
 
 				List<Tweet> windowTweets = getFirstTweets(windowTweetsPath);
-				
+
 				PseudoSupervisedFilter filter = new PseudoSupervisedFilter();
 				filter.init(firstTweets, windowTweets);
-				
 
 				SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
 				TweetStream stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
 				filter.filter(stream, output);
 
-				
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

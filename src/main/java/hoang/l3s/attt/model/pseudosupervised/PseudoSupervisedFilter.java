@@ -39,9 +39,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		preprocessingUtils = new TweetPreprocessingUtils();
 		getPublishedTimeofLastTweets(firstOfTweets);
 		keywords = getKeyWords(firstOfTweets, windowTweets);
-
 		List<Tweet> negativeTweets = getNegativeSamples(firstOfTweets, windowTweets);
-
 		classifier = new Classifier(firstOfTweets, negativeTweets, preprocessingUtils);
 	}
 
@@ -52,13 +50,11 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			if (publishedTimeofLastTweet < time)
 				publishedTimeofLastTweet = time;
 		}
-
 	}
 
 	// get negative samples
 	public List<Tweet> getNegativeSamples(List<Tweet> firstOfTweets, List<Tweet> windowTweets) {
 		List<Tweet> negativeSamples = new ArrayList<Tweet>();
-
 		for (Tweet tweet : windowTweets) {
 			if (tweet.getPublishedTime() > publishedTimeofLastTweet)
 				break;
@@ -74,7 +70,9 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			// positive sample
 			if (flag) {
 				double r = Math.random();
+
 				if (r < (double) negativeSampleRatio / 100)
+
 					negativeSamples.add(tweet);
 			}
 		}
@@ -139,6 +137,10 @@ public class PseudoSupervisedFilter extends FilteringModel {
 				// ?? should have "casting to double" if "idf" is of int type
 				tfIdfTermsMap.put(term,
 						(tf / totalFirstTerms) * Math.log((double) nTweetsInWindow / idfTermsMap.get(term)));
+
+				tfIdfTermsMap.put(term,
+						(tf / totalFirstTerms) * Math.log((double) nTweetsInWindow / idfTermsMap.get(term)));
+
 			}
 
 		}
@@ -148,9 +150,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	// get set of keywords E
 	public HashSet<String> getKeyWords(List<Tweet> firstOfTweets, List<Tweet> windowTweets) {
 		HashSet<String> keywords = new HashSet<String>();
-
 		HashMap<String, Double> tfIdfTermsMap = gettfIdfTermsMap(firstOfTweets, windowTweets);
-
 		// getTopLTfIdfTerms is a function that I added into RankingUtils.java
 		keywords = RankingUtils.getTopKTfIdfTerms(nExclusionTerms, tfIdfTermsMap);
 		return keywords;
@@ -163,7 +163,6 @@ public class PseudoSupervisedFilter extends FilteringModel {
 
 	public void update(Tweet tweet) {
 		// TODO Auto-generated method stub
-
 	}
 
 	public void filter(TweetStream stream, String ouputPath) {
@@ -177,6 +176,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			Tweet tweet = null;
 
 			while ((tweet = stream.getTweet()) != null) {
+
 				String result = classifier.classify(tweet);
 				// Tuan-Anh: avoid hard code
 				// Tuan-Anh: use outputTweet in superclass
@@ -197,6 +197,44 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		}
 
 	}
+
+	// //test the result of training model on positive samples
+	// public void filter(List<Tweet> stream, String ouputPath) {
+	// BufferedWriter out = null;
+	// try {
+	// File file = new File(ouputPath);
+	// if (file.exists()) {
+	// file.delete();
+	// }
+	// out = new BufferedWriter(new FileWriter(file, true));
+	// int count = 0;
+	// int relevantCount = 0;
+	// for(Tweet tweet: stream) {
+	// if(count<1000) {
+	// String result = classifier.classify(tweet);
+	// if (result.equalsIgnoreCase("relevant")) {
+	// out.write(tweet.getText());
+	// out.write('\n');
+	// relevantCount++;
+	// }
+	// } else
+	// break;
+	//
+	// count++;
+	// // check if is the update time for update
+	// }
+	// System.out.println("the number of relevant tweets is: "+ relevantCount);
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// } finally {
+	// try {
+	// out.close();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
+	//
+	// }
 
 	// //test the result of training model on positive samples
 	// public void filter(List<Tweet> stream, String ouputPath) {
