@@ -1,14 +1,13 @@
 package hoang.l3s.attt.utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import hoang.l3s.attt.model.graphbased.AdjacentTerm;
+//import hoang.l3s.attt.model.graphbased.AdjacentTerm;
 
 public class RankingUtils {
 
@@ -34,6 +33,29 @@ public class RankingUtils {
 		}
 		return topAdjTerms;
 	}	
+	
+	public static HashSet<String> getTopKTfIdfTerms(int k, HashMap<String, Double> tfIdfTermsMap) {
+		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
+		for(Map.Entry<String, Double> tfIdfTermsIter : tfIdfTermsMap.entrySet()) {
+			String term = tfIdfTermsIter.getKey();
+			Double tfIdfTerm = tfIdfTermsIter.getValue();
+			if(queue.size() < k) {
+				queue.add(new KeyValue_Pair(term, tfIdfTerm));
+			} else {
+				KeyValue_Pair head = queue.peek();
+				if(head.getDoubleValue() < tfIdfTerm) {
+					queue.poll();
+					queue.add(new KeyValue_Pair(term, tfIdfTerm));
+				}
+			}
+		}
+		
+		HashSet<String> topTfIdfTerms = new HashSet<String>();
+		while(!queue.isEmpty() ) {
+			topTfIdfTerms.add(queue.poll().getStrKey());
+		}
+		return topTfIdfTerms;
+	}
 
 	public static List<Integer> getTopElements(int k, double[] wordDistributions) {
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();

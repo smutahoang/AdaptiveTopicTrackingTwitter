@@ -2,7 +2,6 @@ package hoang.l3s.attt.model.pseudosupervised;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import hoang.l3s.attt.model.Tweet;
@@ -20,7 +19,7 @@ public class Classifier {
 	 * 
 	 * @param tweets
 	 */
-	private static int thresold = 10; // only terms appear more than 10 times as the features
+	//private static int thresold = 10; // only terms appear more than 10 times as the features
 	private TweetPreprocessingUtils preprocessingUtils;
 	private ArrayList<Attribute> attributes;
 	private ArrayList<Instance> instances;
@@ -34,7 +33,6 @@ public class Classifier {
 		attributes = featureSelection(positiveSamples);
 		instances = getListOfInstances(positiveSamples, negativeSamples);
 		trainingModel(attributes, instances);
-		
 	}
 	
 	
@@ -61,7 +59,7 @@ public class Classifier {
 	// get list of instances
 	public ArrayList<Instance> getListOfInstances(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
 		ArrayList<Instance> instances = new ArrayList<Instance>();
-		int nOfInstances =positiveSamples.size() + negativeSamples.size();
+		int nOfInstances =positiveSamples.size() + negativeSamples.size() ;
 		int nOfAttributes = attributes.size();
 		
 		for(int i = 0; i<  nOfInstances; i++ )
@@ -73,12 +71,12 @@ public class Classifier {
 			getInstance(positiveSamples.get(i), instances.get(i));
 			instances.get(i).setValue(attributes.get(nOfAttributes-1), "relevant");
 		}
-		int nInstances = instances.size();
+		int nPositiveInstances = positiveSamples.size(); 
+		
 		//iterate all positive samples and add into dataset
 		for(int i = 0; i<negativeSamples.size(); i++) {
-			
-			getInstance(negativeSamples.get(i), instances.get(nInstances + i));
-			instances.get(nInstances+ i).setValue(attributes.get(attributes.size()-1), "nonrelevant");
+			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
+			instances.get(nPositiveInstances+ i).setValue(attributes.get(attributes.size()-1), "nonrelevant");
 		}
 		
 		return instances;
@@ -87,7 +85,7 @@ public class Classifier {
 	// get list of features 
 	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples) { 
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-		HashMap<String, Integer> countTermMaps = new HashMap<String, Integer>();
+	//	HashMap<String, Integer> countTermMaps = new HashMap<String, Integer>();
 		int nAttributes = 0;
 		
 		
@@ -112,8 +110,10 @@ public class Classifier {
 		for(Tweet tweet: positiveSamples) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			for(String term: terms) {
-				attributes.add(new Attribute(term, nAttributes));
-				nAttributes++;
+				if(!attributes.contains(new Attribute(term))) {
+					attributes.add(new Attribute(term, nAttributes));
+					nAttributes++;
+				}
 			}
 		}
 		attributes.add(new Attribute("MISS_ATT", nAttributes));// what if one of the above "term" is "miss"??
@@ -125,7 +125,7 @@ public class Classifier {
 		return attributes;
 	}
 
-	// extract feature struturce of a tweet
+	// extract feature structure of a tweet
 	public void getInstance (Tweet tweet, Instance instance) {
 		List<String> terms = tweet.getTerms(preprocessingUtils);
 		for(int j = 0; j < attributes.size()-1; j++) {
@@ -155,9 +155,7 @@ public class Classifier {
 		test.setClassIndex(attributes.size()-1);
 		Instance ins = new SparseInstance(attributes.size());
 		getInstance(tweet, ins);
-		
 		test.add(ins);
-		
 		try {
 			result = test.classAttribute().value((int)svm.classifyInstance(test.get(0)));
 			
