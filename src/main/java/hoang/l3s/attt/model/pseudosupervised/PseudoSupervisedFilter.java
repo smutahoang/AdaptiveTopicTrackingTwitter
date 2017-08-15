@@ -22,9 +22,12 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	private Classifier classifier;
 	private TweetPreprocessingUtils preprocessingUtils;
 	private long publishedTimeofLastTweet;
-	private static int nExclusionTerms = 200;
-	private static int negativeSampleRatio = 20;
 	private HashSet<String> keywords;
+	private final String RELEVANT_CLASS = "relevant";
+	private final int NEXCLUSIONTERMS = 200;
+	private final int NEGATIVESAMPLERATIO = 20;
+	private final int REMOVINGRATIO = 10; 
+	
 
 	public PseudoSupervisedFilter() {
 		// TODO Auto-generated constructor stub
@@ -33,6 +36,10 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	public void init(List<Tweet> tweets) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	public void filter(TweetStream stream, String ouputPath) {
+		// TODO Auto-generated method stub
 	}
 
 	public void init(List<Tweet> firstOfTweets, List<Tweet> windowTweets) {
@@ -71,7 +78,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			if (flag) {
 				double r = Math.random();
 
-				if (r < (double) negativeSampleRatio / 100)
+				if (r < (double) NEGATIVESAMPLERATIO / 100)
 
 					negativeSamples.add(tweet);
 			}
@@ -134,13 +141,8 @@ public class PseudoSupervisedFilter extends FilteringModel {
 
 			// check if a term dont appear in any tweets?
 			if (idfTermsMap.containsKey(term)) {
-				// ?? should have "casting to double" if "idf" is of int type
 				tfIdfTermsMap.put(term,
 						(tf / totalFirstTerms) * Math.log((double) nTweetsInWindow / idfTermsMap.get(term)));
-
-				tfIdfTermsMap.put(term,
-						(tf / totalFirstTerms) * Math.log((double) nTweetsInWindow / idfTermsMap.get(term)));
-
 			}
 
 		}
@@ -152,7 +154,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		HashSet<String> keywords = new HashSet<String>();
 		HashMap<String, Double> tfIdfTermsMap = gettfIdfTermsMap(firstOfTweets, windowTweets);
 		// getTopLTfIdfTerms is a function that I added into RankingUtils.java
-		keywords = RankingUtils.getTopKTfIdfTerms(nExclusionTerms, tfIdfTermsMap);
+		keywords = RankingUtils.getTopKTfIdfTerms(NEXCLUSIONTERMS, tfIdfTermsMap);
 		return keywords;
 	}
 
@@ -164,113 +166,42 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	public void update(Tweet tweet) {
 		// TODO Auto-generated method stub
 	}
-
-	public void filter(TweetStream stream, String ouputPath) {
-		BufferedWriter out = null;
-		try {
-			File file = new File(ouputPath);
-			if (file.exists()) {
-				file.delete();
-			}
-			out = new BufferedWriter(new FileWriter(file, true));
-			Tweet tweet = null;
-
-			while ((tweet = stream.getTweet()) != null) {
-
-				String result = classifier.classify(tweet);
-				// Tuan-Anh: avoid hard code
-				// Tuan-Anh: use outputTweet in superclass
-				if (result.equalsIgnoreCase("relevant")) {
-					out.write(tweet.getText());
-					out.write('\n');
-				}
-				// check if is the update time for update
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				out.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+	
+	public void removeOldestTweets(List<Tweet> tweets) {
+		int nRemovingTweets = tweets.size()*REMOVINGRATIO/100;
+		for(int i = 0; i<nRemovingTweets; i++) {
+			tweets.remove(i);
 		}
-
 	}
 
-	// //test the result of training model on positive samples
-	// public void filter(List<Tweet> stream, String ouputPath) {
-	// BufferedWriter out = null;
-	// try {
-	// File file = new File(ouputPath);
-	// if (file.exists()) {
-	// file.delete();
-	// }
-	// out = new BufferedWriter(new FileWriter(file, true));
-	// int count = 0;
-	// int relevantCount = 0;
-	// for(Tweet tweet: stream) {
-	// if(count<1000) {
-	// String result = classifier.classify(tweet);
-	// if (result.equalsIgnoreCase("relevant")) {
-	// out.write(tweet.getText());
-	// out.write('\n');
-	// relevantCount++;
-	// }
-	// } else
-	// break;
-	//
-	// count++;
-	// // check if is the update time for update
-	// }
-	// System.out.println("the number of relevant tweets is: "+ relevantCount);
-	// } catch (IOException e) {
-	// e.printStackTrace();
-	// } finally {
-	// try {
-	// out.close();
-	// } catch (IOException e) {
-	// e.printStackTrace();
-	// }
-	// }
-	//
-	// }
+	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets, List<Tweet> windowTweets) {
+		File file = new File(ouputPath);
+		if (file.exists()) {
+			file.delete();
+		}
+		Tweet tweet = null;
 
-	// //test the result of training model on positive samples
-	// public void filter(List<Tweet> stream, String ouputPath) {
-	// BufferedWriter out = null;
-	// try {
-	// File file = new File(ouputPath);
-	// if (file.exists()) {
-	// file.delete();
-	// }
-	// out = new BufferedWriter(new FileWriter(file, true));
-	// int count = 0;
-	// int relevantCount = 0;
-	// for(Tweet tweet: stream) {
-	// if(count<1000) {
-	// String result = classifier.classify(tweet);
-	// if (result.equalsIgnoreCase("relevant")) {
-	// out.write(tweet.getText());
-	// out.write('\n');
-	// relevantCount++;
-	// }
-	// } else
-	// break;
-	//
-	// count++;
-	// // check if is the update time for update
-	// }
-	// System.out.println("the number of relevant tweets is: "+ relevantCount);
-	// } catch (IOException e) {
-	// e.printStackTrace();
-	// } finally {
-	// try {
-	// out.close();
-	// } catch (IOException e) {
-	// e.printStackTrace();
-	// }
-	// }
-	//
-	// }
+		while ((tweet = stream.getTweet()) != null) {
+
+			String result = classifier.classify(tweet);
+
+			if (result.equalsIgnoreCase(RELEVANT_CLASS)) {
+				firstOfTweets.add(tweet); // add tweet into the set of positive tweets
+				outputTweet(tweet, ouputPath);
+			}
+			// check if is the update time for update
+			long time = tweet.getPublishedTime();
+			if(time > publishedTimeofLastTweet) {
+				// re-training 
+				publishedTimeofLastTweet = tweet.getPublishedTime();
+				//(optional) remove top N oldest tweets in set of first tweets
+				removeOldestTweets(firstOfTweets);
+				keywords = getKeyWords(firstOfTweets, windowTweets);// window with new time
+				List<Tweet> negativeSamples = getNegativeSamples(firstOfTweets, windowTweets);
+				classifier = new Classifier(firstOfTweets, negativeSamples, preprocessingUtils);
+		
+			}
+		}
+	}
+
 }
