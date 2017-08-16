@@ -135,7 +135,7 @@ public class Tester {
 
 				SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
 				TweetStream stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
-				filter.filter(stream, output);
+				filter.filter(stream, output, firstTweets, windowTweets);
 
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block

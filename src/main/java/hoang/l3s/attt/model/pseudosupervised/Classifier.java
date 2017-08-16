@@ -3,6 +3,7 @@ package hoang.l3s.attt.model.pseudosupervised;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Scanner;
 
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
@@ -42,13 +43,14 @@ public class Classifier {
 		preprocessingUtils = _preprocessingUtils;
 		attributes = featureSelection(positiveSamples);
 		instances = getListOfInstances(positiveSamples, negativeSamples);
+
 		trainingModel(attributes, instances);
 	}
 
 	// training model
 	public void trainingModel(ArrayList<Attribute> attributes, ArrayList<Instance> instances) {
 
-		Instances dataSet = new Instances("TrackingTweets", attributes, instances.size());
+		Instances dataSet = new Instances(CLASSIFYING, attributes, instances.size());
 		dataSet.setClassIndex(attributes.size() - 1);
 		for (int i = 0; i < instances.size(); i++) {
 			dataSet.add(instances.get(i));
@@ -77,14 +79,14 @@ public class Classifier {
 		for (int i = 0; i < positiveSamples.size(); i++) {
 
 			getInstance(positiveSamples.get(i), instances.get(i));
-			instances.get(i).setValue(attributes.get(nOfAttributes - 1), "relevant");
+			instances.get(i).setValue(attributes.get(nOfAttributes - 1), RELEVANT_CLASS);
 		}
 		int nPositiveInstances = positiveSamples.size();
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
 			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
-			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), "nonrelevant");
+			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), NONRELEVANT_CLASS);
 		}
 		return instances;
 	}
@@ -105,6 +107,7 @@ public class Classifier {
 				if (!termSet.contains(term)) {
 					attributes.add(new Attribute(term, nAttributes));
 					termSet.add(term);
+					nAttributes ++;
 				}
 			}
 		}
@@ -119,8 +122,7 @@ public class Classifier {
 		return attributes;
 	}
 
-	// extract feature structure of a tweet
-
+	// -- extract feature structure of a tweet
 	public void getInstance(Tweet tweet, Instance instance) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 		HashSet<String> terms = new HashSet<String>(termsofTweet);
@@ -133,7 +135,6 @@ public class Classifier {
 			else
 				instance.setValue(att, 1);
 		}
-
 		int count = 0;
 		
 		HashSet<Attribute> attributeList = new HashSet<Attribute>(attributes);
@@ -143,6 +144,7 @@ public class Classifier {
 		}
 
 		instance.setValue(attributes.get(attributes.size() - 2), ((double) count / terms.size()));
+		
 	}
 
 	// get class of a new instance

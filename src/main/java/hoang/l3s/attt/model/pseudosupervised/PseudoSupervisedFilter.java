@@ -180,28 +180,33 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			file.delete();
 		}
 		Tweet tweet = null;
-
+		int count = 0;
 		while ((tweet = stream.getTweet()) != null) {
-
-			String result = classifier.classify(tweet);
-
-			if (result.equalsIgnoreCase(RELEVANT_CLASS)) {
-				firstOfTweets.add(tweet); // add tweet into the set of positive tweets
-				outputTweet(tweet, ouputPath);
-			}
-			// check if is the update time for update
-			long time = tweet.getPublishedTime();
-			if(time > publishedTimeofLastTweet) {
-				// re-training 
-				publishedTimeofLastTweet = tweet.getPublishedTime();
-				//(optional) remove top N oldest tweets in set of first tweets
-				removeOldestTweets(firstOfTweets);
-				keywords = getKeyWords(firstOfTweets, windowTweets);// window with new time
-				List<Tweet> negativeSamples = getNegativeSamples(firstOfTweets, windowTweets);
-				classifier = new Classifier(firstOfTweets, negativeSamples, preprocessingUtils);
-		
+			if(count < 100000) {
+				String result = classifier.classify(tweet);
+				
+				if (result.equalsIgnoreCase(RELEVANT_CLASS)) {
+					firstOfTweets.add(tweet); // add tweet into the set of positive tweets
+					outputTweet(tweet, ouputPath);
+				}
+				// check if is the update time for update
+				long time = tweet.getPublishedTime();
+				if(time > publishedTimeofLastTweet) {
+					// re-training 
+					publishedTimeofLastTweet = tweet.getPublishedTime();
+					//(optional) remove top N oldest tweets in set of first tweets
+					//removeOldestTweets(firstOfTweets);
+					keywords = getKeyWords(firstOfTweets, windowTweets);// window with new time
+					List<Tweet> negativeSamples = getNegativeSamples(firstOfTweets, windowTweets);
+					classifier = new Classifier(firstOfTweets, negativeSamples, preprocessingUtils);
+			
+				}
+				count++;
+			} else {
+				break;
 			}
 		}
+		
 	}
 
 }
