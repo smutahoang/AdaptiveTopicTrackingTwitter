@@ -191,9 +191,11 @@ public class PseudoSupervisedFilter extends FilteringModel {
 				}
 				// check if is the update time for update
 				long time = tweet.getPublishedTime();
-				if(time > publishedTimeofLastTweet) {
+				//update every hour
+				if(time > publishedTimeofLastTweet + 60 * 1000) {
 					// re-training 
-					publishedTimeofLastTweet = tweet.getPublishedTime();
+					System.out.println("....................................update");
+					publishedTimeofLastTweet = time;
 					//(optional) remove top N oldest tweets in set of first tweets
 					//removeOldestTweets(firstOfTweets);
 					keywords = getKeyWords(firstOfTweets, windowTweets);// window with new time
