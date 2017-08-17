@@ -122,7 +122,7 @@ public class Tester {
 
 			String startDate = "Fri Jan 27 00:31:10 +0000 2017";
 			String windowTweetsPath = "/home/hoang/attt/data/firstWindow/travel_ban.txt";
-			String output = "/home/hoang/attt/hnt.txt";
+			String output = "hnt.txt";
 
 			try {
 
