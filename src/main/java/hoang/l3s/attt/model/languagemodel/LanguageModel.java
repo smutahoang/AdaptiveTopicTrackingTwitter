@@ -1,5 +1,7 @@
 package hoang.l3s.attt.model.languagemodel;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -7,96 +9,188 @@ import java.util.List;
 import java.util.Set;
 
 import hoang.l3s.attt.model.Tweet;
-import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
+import hoang.l3s.attt.model.languagemodel.LMSmoothingUtils.SmoothingType;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModel {
 
-	private String placeholderKey = "[[UNIGRAM]]";
+	private final String UNIGRAM_PLACE_HOLDER_KEY = "[[UNIGRAM]]";
 
 	private int nGram;
 
-	private HashMap<String, Integer> preTermCountMap; // HashMap<preTerm, count>
-	private HashMap<String, HashMap<String, Integer>> nTermCountMap; // HashMap<preTerm,
-																		// HashMap<term,
-																		// count>>
+	private int nUpdates;
+
+	private HashMap<String, Integer> prefixCountMap; // HashMap<prefix, count>
+	// HashMap<prefix, HashMap<term, count>>
+	private HashMap<String, HashMap<String, Integer>> prefix2TermCountMap;
 
 	private TweetPreprocessingUtils preprocessingUtils;
-	private LanguageModelSmoothing smoother;
-	private HashMap<String, HashMap<String, Double>> bgProbMap;
+	private LMSmoothingUtils lmSmoothingUtils;
+	private HashMap<String, HashMap<String, Double>> prefix2TermProbMap;
+	private HashMap<String, Integer> prefixStartCount;
+	// #times a prefix starts a tweet
+	private HashMap<String, Integer> prefixEndCount;
+	// #times a prefix ends a tweet
+
+	private int totalPrefixStartCount;
+	private int totalPrefixEndCount;
+
+	// utilities variables
+	private StringBuffer prefixBuilder;
 
 	/***
 	 * to train a language model based on a set of tweets
 	 * 
 	 * @param tweets
 	 */
-	public LanguageModel(int _nGram, TweetPreprocessingUtils _preprocessingUtils, LanguageModelSmoothing _smoother) {
+	public LanguageModel(int _nGram, TweetPreprocessingUtils _preprocessingUtils, LMSmoothingUtils _lmSmoothingUtils) {
 		this.nGram = _nGram;
 		this.preprocessingUtils = _preprocessingUtils;
-		this.smoother = _smoother;
-		this.bgProbMap = new HashMap<String, HashMap<String, Double>>();
+		this.lmSmoothingUtils = _lmSmoothingUtils;
+		this.totalPrefixStartCount = 0;
+		this.totalPrefixEndCount = 0;
+		// utility variables
+		prefixBuilder = new StringBuffer(150);
+		nUpdates = 0;
+	}
+
+	public int nGram() {
+		return nGram;
+	}
+
+	public int getNUpdates() {
+		return nUpdates;
+	}
+
+	public void incNUpdates() {
+		nUpdates++;
+	}
+
+	public HashMap<String, HashMap<String, Integer>> getPrefix2TermCountMap() {
+		return prefix2TermCountMap;
+	}
+
+	public HashMap<String, Integer> getPrefixCountMap() {
+		return prefixCountMap;
+	}
+
+	public HashMap<String, Integer> getPrefixStartCount() {
+		return prefixStartCount;
+	}
+
+	public HashMap<String, Integer> getPrefixEndCount() {
+		return prefixEndCount;
+	}
+
+	public HashMap<String, HashMap<String, Double>> getPrefix2TermProbMap() {
+		return prefix2TermProbMap;
+	}
+
+	public int getTotalPrefixStartCount() {
+		return totalPrefixStartCount;
+	}
+
+	public void setTotalPrefixStartCount(int _count) {
+		totalPrefixStartCount = _count;
+	}
+
+	public int getTotalPrefixEndCount() {
+		return totalPrefixEndCount;
+	}
+
+	public void setTotalPrefixEndCount(int _count) {
+		totalPrefixEndCount = _count;
 	}
 
 	/*
 	 * process one tweet
 	 */
-	public void getCountMap(List<String> terms) {
-
-		for (int j = 0; j < terms.size() - (nGram - 1); j++) {
-			StringBuffer preTerm = new StringBuffer("");
-
-			int k = 0;
-			for (k = 0; k < nGram - 1; k++) {
-				preTerm.append(terms.get(j + k) + " ");
+	private void addPrefix2TermCount(List<String> terms) {
+		String prefix = null;
+		int nTerms = terms.size() - (nGram - 1);
+		for (int j = 0; j < nTerms; j++) {
+			prefixBuilder.delete(0, 150);
+			// int k = 0;
+			for (int k = 0; k < nGram - 1; k++) {
+				// preTerm.append(terms.get(j + k) + " ");
+				prefixBuilder.append(terms.get(j + k));
+				prefixBuilder.append(' ');
 			}
-			String term = terms.get(j + k);
+			// String term = terms.get(j + k);
 
-			if (preTermCountMap.containsKey(preTerm.toString())) {
-				int preCnt = preTermCountMap.get(preTerm.toString());
-				preTermCountMap.put(preTerm.toString(), preCnt + 1);
+			prefix = prefixBuilder.toString();
+			String term = terms.get(j + nGram - 1);
 
-				HashMap<String, Integer> termCountMap = nTermCountMap.get(preTerm.toString());
-				if (termCountMap != null) {
-					if (termCountMap.containsKey(term)) {
-						int count = termCountMap.get(term);
-						termCountMap.put(term, count + 1);
-					} else {
-						termCountMap.put(term, 1);
-					}
+			if (j == 0) {// this prefix starts the tweet
+				totalPrefixStartCount++;
+				if (prefixStartCount.containsKey(prefix)) {
+					prefixStartCount.put(prefix, prefixStartCount.get(prefix) + 1);
 				} else {
-					termCountMap = new HashMap<String, Integer>();
+					prefixStartCount.put(prefix, 1);
+				}
+			}
+
+			if (prefixCountMap.containsKey(prefix)) {
+				int count = prefixCountMap.get(prefix);
+				prefixCountMap.put(prefix, count + 1);
+
+				HashMap<String, Integer> termCountMap = prefix2TermCountMap.get(prefix);
+				if (termCountMap.containsKey(term)) {
+					count = termCountMap.get(term);
+					termCountMap.put(term, count + 1);
+				} else {
 					termCountMap.put(term, 1);
 				}
 
-				nTermCountMap.put(preTerm.toString(), termCountMap);
+				prefix2TermCountMap.put(prefix, termCountMap);
 			} else {
-				preTermCountMap.put(preTerm.toString(), 1);
+				prefixCountMap.put(prefix, 1);
 
 				HashMap<String, Integer> termCountMap = new HashMap<String, Integer>();
 				termCountMap.put(term, 1);
-				nTermCountMap.put(preTerm.toString(), termCountMap);
+				prefix2TermCountMap.put(prefix, termCountMap);
 			}
 		}
+
+		prefixBuilder.delete(0, 150);
+		nTerms = terms.size();
+		// int k = 0;
+		for (int k = Math.max(0, terms.size() - (nGram - 1)); k < nTerms; k++) {
+			// preTerm.append(terms.get(j + k) + " ");
+			prefixBuilder.append(terms.get(k));
+			prefixBuilder.append(' ');
+		}
+
+		prefix = prefixBuilder.toString();
+		totalPrefixEndCount++;
+		if (prefixEndCount.containsKey(prefix)) {
+			prefixEndCount.put(prefix, prefixEndCount.get(prefix) + 1);
+		} else {
+			prefixEndCount.put(prefix, 1);
+		}
+
 	}
 
-	public void getNgramCount(List<Tweet> tweets) {
-		preTermCountMap = new HashMap<String, Integer>();
-		nTermCountMap = new HashMap<String, HashMap<String, Integer>>();
+	private void countPrefixesTerms(List<Tweet> tweets) {
+		prefixCountMap = new HashMap<String, Integer>();
+		prefix2TermCountMap = new HashMap<String, HashMap<String, Integer>>();
+		prefixStartCount = new HashMap<String, Integer>();
+		prefixEndCount = new HashMap<String, Integer>();
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
-			getCountMap(terms);
+			addPrefix2TermCount(terms);
 		}
 	}
 
-	public void getUnigramCount(List<Tweet> tweets) {
+	private void countUnigram(List<Tweet> tweets) {
 		HashMap<String, Integer> unigramCountMap = new HashMap<String, Integer>();
 		int totalCount = 0;
 		int nTweets = tweets.size();
 		for (int i = 0; i < nTweets; i++) {
 			List<String> terms = tweets.get(i).getTerms(preprocessingUtils);
-			int len = terms.size();
-			for (int j = 0; j < len; j++) {
+			int nTerms = terms.size();
+			for (int j = 0; j < nTerms; j++) {
 				String term = terms.get(j);
 				if (!unigramCountMap.containsKey(term)) {
 					unigramCountMap.put(term, 1);
@@ -113,23 +207,37 @@ public class LanguageModel {
 		 * preWord of unigram, and consider the totalcount of pre as the
 		 * preWord's count
 		 */
-		preTermCountMap = new HashMap<String, Integer>();
-		nTermCountMap = new HashMap<String, HashMap<String, Integer>>();
-		preTermCountMap.put(placeholderKey, totalCount);
-		nTermCountMap.put(placeholderKey, unigramCountMap);
+		prefixCountMap = new HashMap<String, Integer>();
+		prefix2TermCountMap = new HashMap<String, HashMap<String, Integer>>();
+		prefixCountMap.put(UNIGRAM_PLACE_HOLDER_KEY, totalCount);
+		prefix2TermCountMap.put(UNIGRAM_PLACE_HOLDER_KEY, unigramCountMap);
 
 	}
 
-	public void trainLM(List<Tweet> tweets, SmoothingType smoothingType) {
+	/***
+	 * update background language model given a set of tweets
+	 * 
+	 * @param tweets
+	 * @param smoothingType
+	 */
+	public void train(List<Tweet> tweets, SmoothingType smoothingType) {
 		if (nGram == 1) {
-			getUnigramCount(tweets);
+			countUnigram(tweets);
 		} else {
-			getNgramCount(tweets);
+			countPrefixesTerms(tweets);
 		}
+		prefix2TermProbMap = new HashMap<String, HashMap<String, Double>>();
+		lmSmoothingUtils.smoothing(prefixCountMap, prefix2TermCountMap, prefix2TermProbMap, smoothingType);
+		printLM(prefix2TermProbMap);
+		// System.exit(-1);
+	}
 
-		this.smoother.smoothing(preTermCountMap, nTermCountMap, bgProbMap, smoothingType);
-
-		printLM(bgProbMap);
+	public void countNGrams(List<Tweet> tweets) {
+		if (nGram == 1) {
+			countUnigram(tweets);
+		} else {
+			countPrefixesTerms(tweets);
+		}
 	}
 
 	public void printLM(HashMap<String, HashMap<String, Double>> ngramProbMap) {
@@ -148,13 +256,13 @@ public class LanguageModel {
 
 				double preCount = 0;
 				double count = 0;
-				if (nTermCountMap.containsKey(preTerm) && nTermCountMap.get(preTerm).containsKey(term)) {
-					preCount = preTermCountMap.get(preTerm);
-					count = nTermCountMap.get(preTerm).get(term);
+				if (prefix2TermCountMap.containsKey(preTerm) && prefix2TermCountMap.get(preTerm).containsKey(term)) {
+					preCount = prefixCountMap.get(preTerm);
+					count = prefix2TermCountMap.get(preTerm).get(term);
 				}
 				double prob = termProbMap.get(term);
 
-				System.out.println(smoother.formatPrintProb(this.nGram, preTerm, term, preCount, count, prob));
+				System.out.println(lmSmoothingUtils.formatPrintProb(this.nGram, preTerm, term, preCount, count, prob));
 
 				num++;
 				sum += prob;
@@ -164,34 +272,118 @@ public class LanguageModel {
 		System.out.println("total size:" + num + " *******sum:" + sum);
 	}
 
-	public List<Double> getProbilities(Tweet tweet, HashMap<String, HashMap<String, Double>> probMap) {
+	public void save(String filename) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+			Set<String> prefixes = prefix2TermProbMap.keySet();
+			Iterator<String> preIter = prefixes.iterator();
+			int num = 0;
+			double sum = 0;
+			while (preIter.hasNext()) {
+				String prefix = preIter.next();
+				HashMap<String, Double> termProbMap = prefix2TermProbMap.get(prefix);
+				Set<String> keys = termProbMap.keySet();
+				Iterator<String> iter = keys.iterator();
+				while (iter.hasNext()) {
+					String term = iter.next();
+					int prefixCount = prefixCountMap.get(prefix);
+					int termCount = prefix2TermCountMap.get(prefix).get(term);
+					double prob = termProbMap.get(term);
+					bw.write(String.format("%s,%s,%d,%d,%f", prefix, term, prefixCount, termCount, prob));
+					bw.write("\n");
+					num++;
+					sum += prob;
+				}
+			}
+			bw.write(String.format("total size: %d,sum:%f", num, sum));
+			bw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	}
+
+	private double getPrefixStartProb(String prefix) {
+		if (prefixStartCount.containsKey(prefix)) {
+			return ((double) prefixStartCount.get(prefix)) / totalPrefixStartCount;
+		} else {// smoothing
+			// TODO: smoothing
+			return -1;
+		}
+
+	}
+
+	private double getPrefixEndProb(String prefix) {
+		if (prefixEndCount.containsKey(prefix)) {
+			return ((double) prefixEndCount.get(prefix)) / totalPrefixEndCount;
+		} else {// smoothing
+			// TODO: smoothing
+			return -1;
+		}
+	}
+
+	private double getPrefix2TermProb(String prefix, String term) {
+		if (prefix2TermProbMap.containsKey(prefix)) {
+			HashMap<String, Double> termProbs = prefix2TermProbMap.get(prefix);
+			if (termProbs.containsKey(term)) {
+				return termProbs.get(term);
+			} else {// smoothing
+				// TODO: smoothing
+				return -1;
+			}
+		} else {// smoothing
+			// TODO: smoothing
+			return -1;
+		}
+	}
+
+	private List<Double> getProbilities(Tweet tweet, HashMap<String, HashMap<String, Double>> probMap) {
 		List<Double> probilitiesList = new ArrayList<Double>();
 		List<String> terms = tweet.getTerms(preprocessingUtils);
 		System.out.println("term size:" + terms.size());
+		String term = null;
+		String prefix = null;
 
-		for (int i = 0; i < terms.size() - nGram + 1; i++) {
-			StringBuffer preTerm = new StringBuffer("");
+		int nTerms = terms.size() - nGram + 1;
+
+		for (int i = 0; i < nTerms; i++) {
+			prefixBuilder.delete(0, 150);
 			if (nGram == 1) {
-				preTerm.append(placeholderKey);
+				prefixBuilder.append(UNIGRAM_PLACE_HOLDER_KEY);
 			} else {
 				for (int j = 0; j < nGram - 1; j++) {
 					// preTerm.append(terms.get(i + j) + " ");
-					preTerm.append(terms.get(i + j));
-					preTerm.append(" ");
+					prefixBuilder.append(terms.get(i + j));
+					prefixBuilder.append(' ');
+				}
+			}
+			prefix = prefixBuilder.toString();
+			if (i == 0) {
+				if (nGram > 1) {
+					probilitiesList.add(getPrefixStartProb(prefix));
 				}
 			}
 
-			String term = terms.get(i + nGram - 1);
-			System.out.println(term + "|" + preTerm);
-
-			if (probMap.containsKey(preTerm.toString()) && probMap.get(preTerm.toString()).containsKey(term)) {
-				probilitiesList.add(probMap.get(preTerm.toString()).get(term));
-				System.out.println("-----------pro:" + probMap.get(preTerm.toString()).get(term));
+			term = terms.get(i + nGram - 1);
+			System.out.println(term + "|" + prefix);
+			double prob = getPrefix2TermProb(prefix, term);
+			probilitiesList.add(prob);
+			System.out.println("-----------pro:" + prob);
+		}
+		if (nGram > 1) {
+			prefixBuilder.delete(0, 150);
+			nTerms = terms.size();
+			// int k = 0;
+			for (int k = Math.max(0, terms.size() - (nGram - 1)); k < nTerms; k++) {
+				// preTerm.append(terms.get(j + k) + " ");
+				prefixBuilder.append(terms.get(k));
+				prefixBuilder.append(' ');
 			}
+			prefix = prefixBuilder.toString();
+			probilitiesList.add(getPrefixEndProb(prefix));
 		}
 
 		return probilitiesList;
-
 	}
 
 	/***
@@ -204,21 +396,20 @@ public class LanguageModel {
 
 		double perplexity = 0;
 		double sum = 0;
-		List<Double> probList = getProbilities(tweet, bgProbMap);
+		List<Double> probList = getProbilities(tweet, prefix2TermProbMap);
 		int count = probList.size();
-
 		if (count == 0) {
 			return -1;
 		}
-
 		for (int i = 0; i < count; i++) {
 			double pro = probList.get(i);
-			sum += Math.log(pro) / Math.log(2);
+			if (pro > 0) {
+				sum += Math.log(pro) / Math.log(2);
+			}
 			// System.out.print("a pro:" + pro + " log:" + Math.log(pro) /
 			// Math.log(2) + "
 			// sum:" + sum + "\n");
 		}
-
 		sum = sum * (-1.0 / count);
 		// System.out.println("sum:" + sum);
 		perplexity = Math.pow(2, sum);
@@ -226,14 +417,5 @@ public class LanguageModel {
 		System.out.println("perplexity:" + perplexity + " probList.size:" + probList.size());
 
 		return perplexity;
-	}
-
-	/***
-	 * update the language model given a new tweet
-	 * 
-	 * @param tweet
-	 */
-	public void update(Tweet tweet) {
-
 	}
 }

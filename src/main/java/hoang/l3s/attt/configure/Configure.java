@@ -1,6 +1,6 @@
 package hoang.l3s.attt.configure;
 
-import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
+import hoang.l3s.attt.model.languagemodel.LMSmoothingUtils.SmoothingType;
 
 public class Configure {
 
@@ -12,7 +12,13 @@ public class Configure {
 		Forget, Queue
 	}
 
-	public final static Author author = Author.hoang;
+	public enum FilterType {
+		KeywordBased, LanguageModelBased, PseudoSupervised, GraphBased
+	}
+
+	public final static Author author = Author.hoang;	
+	public final static FilterType filterType = FilterType.LanguageModelBased;
+
 	public final static boolean runningOnLocal = false;
 
 	public static int nGram = 1;
@@ -31,8 +37,8 @@ public class Configure {
 
 	public Configure() {
 		if (author == Author.hoang) {
-			// dirPath = "/home/hoang/attt";
-			dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+			dirPath = "/home/hoang/attt";
+			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		} else if (author == Author.nguyen) {
 			// dirPath = "/home/hoang/attt";
 			dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";

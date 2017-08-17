@@ -51,6 +51,6 @@ public abstract class FilteringModel {
 	 * 
 	 * @param stream
 	 */
-	public abstract void filter(TweetStream stream, String ouputPath);
+	public abstract void filter(TweetStream stream, String outputPath);
 
 }

@@ -2,23 +2,22 @@ package hoang.l3s.attt.model.languagemodel;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
-import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
+import hoang.l3s.attt.model.languagemodel.LMSmoothingUtils.SmoothingType;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModelBasedFilter extends FilteringModel {
 
-	private LanguageModel filter;
+	private LanguageModel bgLanguageModel;
 	private int nGram;
 	private TweetPreprocessingUtils preprocessingUtils;
 	// private HashMap<String, HashMap<String, Double>> bgProbMap;
-	private LanguageModelSmoothing smoothing;
+	private LMSmoothingUtils lmSmoothingUtils;
 	private List<Tweet> updateBuffer;
 
 	public LanguageModelBasedFilter(int _nGram) {
@@ -27,11 +26,11 @@ public class LanguageModelBasedFilter extends FilteringModel {
 
 	public void init(List<Tweet> tweets) {
 		preprocessingUtils = new TweetPreprocessingUtils();
-		smoothing = new LanguageModelSmoothing();
+		lmSmoothingUtils = new LMSmoothingUtils();
 		// bgProbMap = new HashMap<String, HashMap<String, Double>>();
-		filter = new LanguageModel(nGram, preprocessingUtils, smoothing);
+		bgLanguageModel = new LanguageModel(nGram, preprocessingUtils, lmSmoothingUtils);
 		updateBuffer = new ArrayList<Tweet>();
-		filter.trainLM(tweets, SmoothingType.NoSmoothing);
+		bgLanguageModel.train(tweets, SmoothingType.NoSmoothing);
 	}
 
 	public double relevantScore(Tweet tweet) {
@@ -49,7 +48,9 @@ public class LanguageModelBasedFilter extends FilteringModel {
 			updataQueue(tweet);
 			break;
 		}
-
+		String filename = String.format("%s/language_model/model_%d.csv", Configure.outputPath,
+				bgLanguageModel.getNUpdates());
+		bgLanguageModel.save(filename);
 	}
 
 	public void updateForget(Tweet tweet) {
@@ -57,7 +58,11 @@ public class LanguageModelBasedFilter extends FilteringModel {
 
 		if (updateBuffer.size() >= Configure.updateBufferCapacity) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
-			filter.trainLM(updateBuffer, Configure.smoothingType);
+			// bgLanguageModel.train(updateBuffer, Configure.smoothingType);
+			LanguageModel fgLanguageModel = new LanguageModel(nGram, preprocessingUtils, lmSmoothingUtils);
+			fgLanguageModel.countNGrams(updateBuffer);
+			lmSmoothingUtils.update(bgLanguageModel, fgLanguageModel, Configure.smoothingType);
+			bgLanguageModel.incNUpdates();
 			updateBuffer.removeAll(updateBuffer);
 		}
 	}
@@ -66,10 +71,12 @@ public class LanguageModelBasedFilter extends FilteringModel {
 		updateBuffer.add(tweet);
 		if (updateBuffer.size() >= Configure.queueCapacity) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
-			filter.trainLM(updateBuffer, Configure.smoothingType);
-			// for (int i = 0; i < Configure.updateBufferCapacity; i++) {
-			// updateBuffer.remove(0);
-			// }
+			// bgLanguageModel.train(updateBuffer, Configure.smoothingType);
+			LanguageModel fgLanguageModel = new LanguageModel(nGram, preprocessingUtils, lmSmoothingUtils);
+			fgLanguageModel.countNGrams(updateBuffer);
+			lmSmoothingUtils.update(bgLanguageModel, fgLanguageModel, Configure.smoothingType);
+			bgLanguageModel.incNUpdates();
+
 			int n = Configure.queueCapacity - Configure.updateBufferCapacity;
 			for (int i = 0; i < n; i++) {
 				updateBuffer.set(i, updateBuffer.get(i + Configure.updateBufferCapacity));
@@ -87,11 +94,11 @@ public class LanguageModelBasedFilter extends FilteringModel {
 		if (file.exists()) {
 			file.delete();
 		}
-		String filteredTweetFile = String.format("%s/language_model/filteredTweets.txt", outputPath);
+		String filteredTweetFile = String.format("%s/language_model/lmFilteredTweets.txt", outputPath);
 		Tweet tweet = null;
 		while ((tweet = stream.getTweet()) != null) {
 
-			double perplexity = filter.getPerplexity(tweet);
+			double perplexity = bgLanguageModel.getPerplexity(tweet);
 
 			if (perplexity > 0 && perplexity <= Configure.perplexityThreshold) {
 				outputTweet(tweet, filteredTweetFile);
