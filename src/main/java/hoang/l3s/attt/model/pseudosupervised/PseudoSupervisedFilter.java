@@ -23,6 +23,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	private TweetPreprocessingUtils preprocessingUtils;
 	private long publishedTimeofLastTweet;
 	private HashSet<String> keywords;
+	//Tuan-Anh: should define all the constants in Configure.java
 	private final String RELEVANT_CLASS = "relevant";
 	private final int NEXCLUSIONTERMS = 200;
 	private final int NEGATIVESAMPLERATIO = 20;
@@ -168,10 +169,23 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	}
 	
 	public void removeOldestTweets(List<Tweet> tweets) {
-		int nRemovingTweets = tweets.size()*REMOVINGRATIO/100;
+		// int nRemovingTweets = tweets.size()*REMOVINGRATIO/100;		
+		
+		
+		/*
+		
 		for(int i = 0; i<nRemovingTweets; i++) {
 			tweets.remove(i);
 		}
+		*/
+		int nRemovingTweets = tweets.size() * REMOVINGRATIO / 100;
+		for (int i = nRemovingTweets; i < tweets.size() - nRemovingTweets; i++) {
+			tweets.set(i - nRemovingTweets, tweets.get(i));
+		}
+		for (int i = 0; i < nRemovingTweets; i++) {
+			tweets.remove(tweets.size());
+		}
+		
 	}
 
 	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets, List<Tweet> windowTweets) {

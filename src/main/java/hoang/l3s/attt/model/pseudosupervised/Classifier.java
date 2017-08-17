@@ -128,14 +128,21 @@ public class Classifier {
 		HashSet<String> terms = new HashSet<String>(termsofTweet);
 		for (int j = 0; j < attributes.size() - 1; j++) {
 			Attribute att = attributes.get(j);
-
+			
 			// Tuan-Anh: mind the complexity
 			if (!terms.contains(att.name()))
-				instance.setValue(att, 0);
+				instance.setValue(att, 0);// necessary?
 			else
 				instance.setValue(att, 1);
 		}
 		int count = 0;
+
+		//#attributes  = N
+		//#terms = T
+		// O(N log(T))
+		//improve: iterate over terms, instead of attributes; O(T x log(N))
+		//trade-off: need one more hashset to store attributes
+		
 		
 		HashSet<Attribute> attributeList = new HashSet<Attribute>(attributes);
 		for (String term : terms) {
