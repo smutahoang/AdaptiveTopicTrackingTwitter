@@ -2,8 +2,8 @@ package hoang.l3s.attt.model.pseudosupervised;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
@@ -21,36 +21,36 @@ public class Classifier {
 	 * @param tweets
 	 */
 
-	// private static int thresold = 10; // only terms appear more than 10 times
-	// as the features
-	// private static int thresold = 10; // only terms appear more than 10 times
-	// as the features
+	// private static int thresold = 10; // only terms appear more than 10 times as the features
 	private TweetPreprocessingUtils preprocessingUtils;
 	private ArrayList<Attribute> attributes;
 	private ArrayList<Instance> instances;
 	private SMO svm;
 
 	private final String MISS_ATTRIBUTE = "[[MISS_ATTRIBUTE]]";
-
+	private final String CLASS_ATTRIBUTE = "[[CLASS_ATTRIBUTE]]";
+	private final String RELEVANT_CLASS = "relevant";
+	private final String NONRELEVANT_CLASS = "nonrelevant";
+	private final String CLASSIFYING = "ClassifyingTopics";
+	
+	
 	public Classifier(List<Tweet> tweets) {
 		// TODO Auto-generated constructor stub
 	}
 
 	public Classifier(List<Tweet> positiveSamples, List<Tweet> negativeSamples,
 			TweetPreprocessingUtils _preprocessingUtils) {
-		// Tuan-Anh: preprocessingUtils should be shared among objects to reduce
-		// cost
-		// preprocessingUtils = new TweetPreprocessingUtils();
 		preprocessingUtils = _preprocessingUtils;
 		attributes = featureSelection(positiveSamples);
 		instances = getListOfInstances(positiveSamples, negativeSamples);
+
 		trainingModel(attributes, instances);
 	}
 
 	// training model
 	public void trainingModel(ArrayList<Attribute> attributes, ArrayList<Instance> instances) {
 
-		Instances dataSet = new Instances("TrackingTweets", attributes, instances.size());
+		Instances dataSet = new Instances(CLASSIFYING, attributes, instances.size());
 		dataSet.setClassIndex(attributes.size() - 1);
 		for (int i = 0; i < instances.size(); i++) {
 			dataSet.add(instances.get(i));
@@ -79,14 +79,14 @@ public class Classifier {
 		for (int i = 0; i < positiveSamples.size(); i++) {
 
 			getInstance(positiveSamples.get(i), instances.get(i));
-			instances.get(i).setValue(attributes.get(nOfAttributes - 1), "relevant");
+			instances.get(i).setValue(attributes.get(nOfAttributes - 1), RELEVANT_CLASS);
 		}
 		int nPositiveInstances = positiveSamples.size();
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
 			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
-			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), "nonrelevant");
+			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), NONRELEVANT_CLASS);
 		}
 		return instances;
 	}
@@ -104,36 +104,28 @@ public class Classifier {
 		for (Tweet tweet : positiveSamples) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			for (String term : terms) {
-				// Tuan-Anh: mind the complexity
-				// if (!attributes.contains(new Attribute(term))) {
 				if (!termSet.contains(term)) {
 					attributes.add(new Attribute(term, nAttributes));
 					termSet.add(term);
+					nAttributes ++;
 				}
 			}
 		}
-		// HashMap<String, Integer> countTermMaps = new HashMap<String,
-		// Integer>();
 
-		// Tuan-Anh: avoid hard code
-		attributes.add(new Attribute(MISS_ATTRIBUTE, nAttributes));// what if
-																	// one of
-																	// the above
-																	// "term" is
-																	// "miss"??
+
+		attributes.add(new Attribute(MISS_ATTRIBUTE, nAttributes));
 		ArrayList<String> classAtt = new ArrayList<String>();
 
-		// Tuan-Anh: avoid hard code
-		classAtt.add("relevant");
-		classAtt.add("nonrelevant");
-		attributes.add(new Attribute("CLASS_ATT", classAtt, nAttributes + 1));
+		classAtt.add(RELEVANT_CLASS);
+		classAtt.add(NONRELEVANT_CLASS);
+		attributes.add(new Attribute(CLASS_ATTRIBUTE, classAtt, nAttributes + 1));
 		return attributes;
 	}
 
-	// extract feature structure of a tweet
-
+	// -- extract feature structure of a tweet
 	public void getInstance(Tweet tweet, Instance instance) {
-		List<String> terms = tweet.getTerms(preprocessingUtils);
+		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
+		HashSet<String> terms = new HashSet<String>(termsofTweet);
 		for (int j = 0; j < attributes.size() - 1; j++) {
 			Attribute att = attributes.get(j);
 
@@ -143,21 +135,22 @@ public class Classifier {
 			else
 				instance.setValue(att, 1);
 		}
-
 		int count = 0;
-
+		
+		HashSet<Attribute> attributeList = new HashSet<Attribute>(attributes);
 		for (String term : terms) {
-			if (!attributes.contains(new Attribute(term)))
+			if (!attributeList.contains(new Attribute(term)))
 				count++;
 		}
 
 		instance.setValue(attributes.get(attributes.size() - 2), ((double) count / terms.size()));
+		
 	}
 
 	// get class of a new instance
 	public String classify(Tweet tweet) {
 		String result = "";
-		Instances test = new Instances("TrackingTweets", attributes, 1);
+		Instances test = new Instances(CLASSIFYING, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
 		Instance ins = new SparseInstance(attributes.size());
 		getInstance(tweet, ins);

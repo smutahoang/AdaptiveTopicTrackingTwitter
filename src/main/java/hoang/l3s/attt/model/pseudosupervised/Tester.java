@@ -90,11 +90,7 @@ public class Tester {
 	}
 
 	public static void main(String[] args) {
-		// hoang.l3s.attt.data.DataExamination.main(null);
-		// hoang.l3s.attt.data.NewsMediaTweets.main(null);
-		// hoang.l3s.attt.data.LipengRen.main(null);
-		// hoang.l3s.attt.data.GetFirstTweets.main(null);
-		// filter(args);
+
 		new Configure();
 		int nGram = 1;
 
@@ -120,9 +116,6 @@ public class Tester {
 				e.printStackTrace();
 			}
 
-			// long endTime = System.currentTimeMillis();
-			// System.out.println("running time： " + (endTime - startTime) +
-			// "ms");
 			break;
 
 		case nguyen:
@@ -142,7 +135,7 @@ public class Tester {
 
 				SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
 				TweetStream stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
-				filter.filter(stream, output);
+				filter.filter(stream, output, firstTweets, windowTweets);
 
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
