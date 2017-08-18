@@ -1,6 +1,6 @@
 package hoang.l3s.attt.configure;
 
-import hoang.l3s.attt.model.languagemodel.LMSmoothingUtils.SmoothingType;
+import hoang.l3s.attt.model.languagemodel.LanguageModelSmoothing.SmoothingType;
 
 public class Configure {
 
@@ -12,13 +12,7 @@ public class Configure {
 		Forget, Queue
 	}
 
-	public enum FilterType {
-		KeywordBased, LanguageModelBased, PseudoSupervised, GraphBased
-	}
-
-	public final static Author author = Author.hoang;	
-	public final static FilterType filterType = FilterType.LanguageModelBased;
-
+	public final static Author author = Author.nguyen;
 	public final static boolean runningOnLocal = false;
 
 	public static int nGram = 1;
@@ -34,14 +28,25 @@ public class Configure {
 	public static String firstTweetsPath;
 	public static String streamPath;
 	public static String outputPath;
+	
+	// constants for pseudo supervised model
+	public static String rClassName = "relevant";
+	public static String nonrClassName = "nonrelevant";
+	public static int nExclusionTerms = 200;
+	public static int negativeSamplesRatio = 20;
+	public static int removingRatio = 10; 
+	public static String missAttribute = "[[MISS_ATTRIBUTE]]";
+	public static String classAttribute = "[[CLASS_ATTRIBUTE]]";
+	public static String problemName = "ClassifyingTopics";
+	public static int updatingTime = 360000; // update every hour
 
 	public Configure() {
 		if (author == Author.hoang) {
-			dirPath = "/home/hoang/attt";
-			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
-		} else if (author == Author.nguyen) {
 			// dirPath = "/home/hoang/attt";
 			dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+		} else if (author == Author.nguyen) {
+			dirPath = "/home/hoang/attt";
+			//dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		}
 
 		else {

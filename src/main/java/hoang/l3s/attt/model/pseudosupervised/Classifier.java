@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 
+import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import weka.classifiers.functions.SMO;
@@ -27,13 +28,6 @@ public class Classifier {
 	private ArrayList<Instance> instances;
 	private SMO svm;
 
-	private final String MISS_ATTRIBUTE = "[[MISS_ATTRIBUTE]]";
-	private final String CLASS_ATTRIBUTE = "[[CLASS_ATTRIBUTE]]";
-	private final String RELEVANT_CLASS = "relevant";
-	private final String NONRELEVANT_CLASS = "nonrelevant";
-	private final String CLASSIFYING = "ClassifyingTopics";
-	
-	
 	public Classifier(List<Tweet> tweets) {
 		// TODO Auto-generated constructor stub
 	}
@@ -50,7 +44,7 @@ public class Classifier {
 	// training model
 	public void trainingModel(ArrayList<Attribute> attributes, ArrayList<Instance> instances) {
 
-		Instances dataSet = new Instances(CLASSIFYING, attributes, instances.size());
+		Instances dataSet = new Instances(Configure.problemName, attributes, instances.size());
 		dataSet.setClassIndex(attributes.size() - 1);
 		for (int i = 0; i < instances.size(); i++) {
 			dataSet.add(instances.get(i));
@@ -79,24 +73,21 @@ public class Classifier {
 		for (int i = 0; i < positiveSamples.size(); i++) {
 
 			getInstance(positiveSamples.get(i), instances.get(i));
-			instances.get(i).setValue(attributes.get(nOfAttributes - 1), RELEVANT_CLASS);
+			instances.get(i).setValue(attributes.get(nOfAttributes - 1), Configure.rClassName);
 		}
 		int nPositiveInstances = positiveSamples.size();
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
 			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
-			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), NONRELEVANT_CLASS);
+			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), Configure.nonrClassName);
 		}
 		return instances;
 	}
 
 	// get list of features
 	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples) {
-		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
-		// HashMap<String, Integer> countTermMaps = new HashMap<String,
-		// Integer>();
-		
+		ArrayList<Attribute> attributes = new ArrayList<Attribute>();		
 		int nAttributes = 0;
 
 		HashSet<String> termSet = new HashSet<String>();
@@ -113,40 +104,39 @@ public class Classifier {
 		}
 
 
-		attributes.add(new Attribute(MISS_ATTRIBUTE, nAttributes));
+		attributes.add(new Attribute(Configure.missAttribute, nAttributes));
 		ArrayList<String> classAtt = new ArrayList<String>();
 
-		classAtt.add(RELEVANT_CLASS);
-		classAtt.add(NONRELEVANT_CLASS);
-		attributes.add(new Attribute(CLASS_ATTRIBUTE, classAtt, nAttributes + 1));
+		classAtt.add(Configure.rClassName);
+		classAtt.add(Configure.nonrClassName);
+		attributes.add(new Attribute(Configure.classAttribute, classAtt, nAttributes + 1));
 		return attributes;
 	}
 
 	// -- extract feature structure of a tweet
 	public void getInstance(Tweet tweet, Instance instance) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
+
+		HashSet<Attribute> attributeSet = new HashSet<Attribute>(attributes);
+		
+		/*for(String term: termsofTweet) {
+			if(attributeSet.contains(new Attribute(term)))
+				instance.setValue(attributes.indexOf(new Attribute(term)), 1);
+		}*/
+		
+		// we need to know the index of the attribute that equals to term, so I still havenot found to improve the complexity 
 		HashSet<String> terms = new HashSet<String>(termsofTweet);
 		for (int j = 0; j < attributes.size() - 1; j++) {
 			Attribute att = attributes.get(j);
 			
 			// Tuan-Anh: mind the complexity
 			if (!terms.contains(att.name()))
-				instance.setValue(att, 0);// necessary?
-			else
-				instance.setValue(att, 1);
+				instance.setValue(att, 0);
+			else instance.setValue(att, 1);
 		}
 		int count = 0;
-
-		//#attributes  = N
-		//#terms = T
-		// O(N log(T))
-		//improve: iterate over terms, instead of attributes; O(T x log(N))
-		//trade-off: need one more hashset to store attributes
-		
-		
-		HashSet<Attribute> attributeList = new HashSet<Attribute>(attributes);
 		for (String term : terms) {
-			if (!attributeList.contains(new Attribute(term)))
+			if (!attributeSet.contains(new Attribute(term)))
 				count++;
 		}
 
@@ -157,7 +147,7 @@ public class Classifier {
 	// get class of a new instance
 	public String classify(Tweet tweet) {
 		String result = "";
-		Instances test = new Instances(CLASSIFYING, attributes, 1);
+		Instances test = new Instances(Configure.problemName, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
 		Instance ins = new SparseInstance(attributes.size());
 		getInstance(tweet, ins);

@@ -1,9 +1,6 @@
 package hoang.l3s.attt.model.pseudosupervised;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
@@ -23,12 +21,6 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	private TweetPreprocessingUtils preprocessingUtils;
 	private long publishedTimeofLastTweet;
 	private HashSet<String> keywords;
-	//Tuan-Anh: should define all the constants in Configure.java
-	private final String RELEVANT_CLASS = "relevant";
-	private final int NEXCLUSIONTERMS = 200;
-	private final int NEGATIVESAMPLERATIO = 20;
-	private final int REMOVINGRATIO = 10; 
-	
 
 	public PseudoSupervisedFilter() {
 		// TODO Auto-generated constructor stub
@@ -69,8 +61,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			boolean flag = true;
 			for (String term : terms) {
-				if (keywords.contains(term)) { // check if term is one of the
-												// keyword
+				if (keywords.contains(term)) {
 					flag = false;
 					break;
 				}
@@ -79,7 +70,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			if (flag) {
 				double r = Math.random();
 
-				if (r < (double) NEGATIVESAMPLERATIO / 100)
+				if (r < (double) Configure.negativeSamplesRatio / 100)
 
 					negativeSamples.add(tweet);
 			}
@@ -155,7 +146,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		HashSet<String> keywords = new HashSet<String>();
 		HashMap<String, Double> tfIdfTermsMap = gettfIdfTermsMap(firstOfTweets, windowTweets);
 		// getTopLTfIdfTerms is a function that I added into RankingUtils.java
-		keywords = RankingUtils.getTopKTfIdfTerms(NEXCLUSIONTERMS, tfIdfTermsMap);
+		keywords = RankingUtils.getTopKTfIdfTerms(Configure.nExclusionTerms, tfIdfTermsMap);
 		return keywords;
 	}
 
@@ -169,17 +160,9 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	}
 	
 	public void removeOldestTweets(List<Tweet> tweets) {
-		// int nRemovingTweets = tweets.size()*REMOVINGRATIO/100;		
-		
-		
-		/*
-		
-		for(int i = 0; i<nRemovingTweets; i++) {
-			tweets.remove(i);
-		}
-		*/
-		int nRemovingTweets = tweets.size() * REMOVINGRATIO / 100;
-		for (int i = nRemovingTweets; i < tweets.size() - nRemovingTweets; i++) {
+
+		int nRemovingTweets = tweets.size() * Configure.removingRatio / 100;
+		for (int i = nRemovingTweets; i < tweets.size(); i++) {
 			tweets.set(i - nRemovingTweets, tweets.get(i));
 		}
 		for (int i = 0; i < nRemovingTweets; i++) {
@@ -199,14 +182,14 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			if(count < 100000) {
 				String result = classifier.classify(tweet);
 				
-				if (result.equalsIgnoreCase(RELEVANT_CLASS)) {
+				if (result.equalsIgnoreCase(Configure.rClassName)) {
 					firstOfTweets.add(tweet); // add tweet into the set of positive tweets
 					outputTweet(tweet, ouputPath);
 				}
 				// check if is the update time for update
 				long time = tweet.getPublishedTime();
 				//update every hour
-				if(time > publishedTimeofLastTweet + 60 * 1000) {
+				if(time > publishedTimeofLastTweet + Configure.updatingTime) {
 					// re-training 
 					System.out.println("....................................update");
 					publishedTimeofLastTweet = time;
