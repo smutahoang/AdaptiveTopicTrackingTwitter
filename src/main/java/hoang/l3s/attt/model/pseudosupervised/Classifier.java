@@ -115,14 +115,25 @@ public class Classifier {
 
 	// -- extract feature structure of a tweet
 	public void getInstance(Tweet tweet, Instance instance) {
-		List<String> terms = tweet.getTerms(preprocessingUtils);
+		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 
 		HashSet<Attribute> attributeSet = new HashSet<Attribute>(attributes);
-		for(String term: terms) {
+		
+		/*for(String term: termsofTweet) {
 			if(attributeSet.contains(new Attribute(term)))
 				instance.setValue(attributes.indexOf(new Attribute(term)), 1);
-		}
+		}*/
 		
+		// we need to know the index of the attribute that equals to term, so I still havenot found to improve the complexity 
+		HashSet<String> terms = new HashSet<String>(termsofTweet);
+		for (int j = 0; j < attributes.size() - 1; j++) {
+			Attribute att = attributes.get(j);
+			
+			// Tuan-Anh: mind the complexity
+			if (!terms.contains(att.name()))
+				instance.setValue(att, 0);
+			else instance.setValue(att, 1);
+		}
 		int count = 0;
 		for (String term : terms) {
 			if (!attributeSet.contains(new Attribute(term)))
