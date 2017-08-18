@@ -1,6 +1,7 @@
 package hoang.l3s.attt.model.pseudosupervised;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
@@ -22,11 +23,14 @@ public class Classifier {
 	 * @param tweets
 	 */
 
-	// private static int thresold = 10; // only terms appear more than 10 times as the features
+	// private static int thresold = 10; // only terms appear more than 10 times
+	// as the features
 	private TweetPreprocessingUtils preprocessingUtils;
 	private ArrayList<Attribute> attributes;
 	private ArrayList<Instance> instances;
 	private SMO svm;
+
+	private HashMap<String, Integer> attribute2Index;
 
 	public Classifier(List<Tweet> tweets) {
 		// TODO Auto-generated constructor stub
@@ -35,7 +39,11 @@ public class Classifier {
 	public Classifier(List<Tweet> positiveSamples, List<Tweet> negativeSamples,
 			TweetPreprocessingUtils _preprocessingUtils) {
 		preprocessingUtils = _preprocessingUtils;
+
 		attributes = featureSelection(positiveSamples);
+		// TODO:add option + function to also do feature selection using both
+		// positive & negative tweets
+
 		instances = getListOfInstances(positiveSamples, negativeSamples);
 
 		trainingModel(attributes, instances);
@@ -80,36 +88,39 @@ public class Classifier {
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
 			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
-			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1), Configure.nonrClassName);
+			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1),
+					Configure.nonrClassName);
 		}
 		return instances;
 	}
 
 	// get list of features
 	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples) {
-		ArrayList<Attribute> attributes = new ArrayList<Attribute>();		
-		int nAttributes = 0;
+		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+		attribute2Index = new HashMap<String, Integer>();
 
-		HashSet<String> termSet = new HashSet<String>();
-
+		int attributeIndex = 0;
 		for (Tweet tweet : positiveSamples) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			for (String term : terms) {
-				if (!termSet.contains(term)) {
-					attributes.add(new Attribute(term, nAttributes));
-					termSet.add(term);
-					nAttributes ++;
+				if (!attribute2Index.containsKey(term)) {
+					attributes.add(new Attribute(term, attributeIndex));
+					attribute2Index.put(term, attributeIndex);
+					attributeIndex++;
 				}
 			}
 		}
 
+		attributes.add(new Attribute(Configure.missAttribute, attributeIndex));
+		attribute2Index.put(Configure.missAttribute, attributeIndex);
+		attributeIndex++;
 
-		attributes.add(new Attribute(Configure.missAttribute, nAttributes));
 		ArrayList<String> classAtt = new ArrayList<String>();
-
 		classAtt.add(Configure.rClassName);
 		classAtt.add(Configure.nonrClassName);
-		attributes.add(new Attribute(Configure.classAttribute, classAtt, nAttributes + 1));
+		attributes.add(new Attribute(Configure.classAttribute, classAtt, attributeIndex));
+		attribute2Index.put(Configure.classAttribute, attributeIndex);
+
 		return attributes;
 	}
 
@@ -117,31 +128,32 @@ public class Classifier {
 	public void getInstance(Tweet tweet, Instance instance) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 
-		HashSet<Attribute> attributeSet = new HashSet<Attribute>(attributes);
-		
-		/*for(String term: termsofTweet) {
-			if(attributeSet.contains(new Attribute(term)))
-				instance.setValue(attributes.indexOf(new Attribute(term)), 1);
-		}*/
-		
-		// we need to know the index of the attribute that equals to term, so I still havenot found to improve the complexity 
-		HashSet<String> terms = new HashSet<String>(termsofTweet);
-		for (int j = 0; j < attributes.size() - 1; j++) {
-			Attribute att = attributes.get(j);
-			
-			// Tuan-Anh: mind the complexity
-			if (!terms.contains(att.name()))
-				instance.setValue(att, 0);
-			else instance.setValue(att, 1);
-		}
+		// HashSet<Attribute> attributeSet = new HashSet<Attribute>(attributes);
 		int count = 0;
-		for (String term : terms) {
-			if (!attributeSet.contains(new Attribute(term)))
+		for (String term : termsofTweet) {
+			if (attribute2Index.containsKey(term)) {
+				int index = attribute2Index.get(term);
+				instance.setValue(index, 1);
+			} else {
 				count++;
+			}
 		}
 
-		instance.setValue(attributes.get(attributes.size() - 2), ((double) count / terms.size()));
-		
+		// [[MISS]] attribute
+		instance.setValue(attributes.get(attributes.size() - 2), ((double) count / termsofTweet.size()));
+
+		// we need to know the index of the attribute that equals to term, so I
+		// still havenot found to improve the complexity
+
+		/*
+		 * HashSet<String> terms = new HashSet<String>(termsofTweet); for (int j
+		 * = 0; j < attributes.size() - 1; j++) { Attribute att =
+		 * attributes.get(j);
+		 * 
+		 * // Tuan-Anh: mind the complexity if (!terms.contains(att.name()))
+		 * instance.setValue(att, 0); else instance.setValue(att, 1); }
+		 */
+
 	}
 
 	// get class of a new instance
