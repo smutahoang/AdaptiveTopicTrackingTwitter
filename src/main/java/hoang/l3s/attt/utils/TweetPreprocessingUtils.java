@@ -455,10 +455,18 @@ public class TweetPreprocessingUtils {
 		return true;
 	}
 
+	private boolean containCharacterORNumber(char[] chars, int start, int end) {
+		for (int i = start; i < end; i++) {
+			if (Character.isLetterOrDigit(chars[i]))
+				return true;
+		}
+		return false;
+	}
+
 	private void removeSymbolInWord(char[] chars, int start, int end) {
 
-		//ptScreen(chars);
-		//System.out.printf("\ni = %d, j = %d", start, end);
+		// ptScreen(chars);
+		// System.out.printf("\ni = %d, j = %d", start, end);
 
 		int i = end - 1;
 		while (!Character.isLetterOrDigit(chars[i])) {
@@ -552,13 +560,13 @@ public class TweetPreprocessingUtils {
 				i++;
 				continue;
 			}
-
-			String term = new String(chars, i, j - i);
-			if (!stopWords.contains(term)) {
-				// System.out.printf("\nnew-word: %s", term);
-				terms.add(terms.size(), term);
+			if (containCharacterORNumber(chars, i, j)) {
+				String term = new String(chars, i, j - i);
+				if (!stopWords.contains(term)) {
+					// System.out.printf("\nnew-word: %s", term);
+					terms.add(terms.size(), term);
+				}
 			}
-
 			i = j;
 		}
 
@@ -566,7 +574,7 @@ public class TweetPreprocessingUtils {
 	}
 
 	public List<String> extractTermInTweet(String tweet) {
-		//System.out.printf("tweet = [[%s]]\n", tweet);
+		// System.out.printf("tweet = [[%s]]\n", tweet);
 		List<String> terms = termExtraction(tweet);
 		return terms;
 	}
@@ -594,7 +602,7 @@ public class TweetPreprocessingUtils {
 
 		// nlpUtils.checkStopWordList();
 
-		String message = "* On January 21st, 2017, White House Press Secretary Sean Spicer held a press conference largely to attack the pre /";
+		String message = "RT @THEJEWISHKING: LAS VEGAS SHOW-March 30th at Eagle Hall w/ @kurttravis @Amarionette_ @weareVIS / Loveshark/The Classifieds ! $12 ea…";
 		System.out.printf("message = [[%s]]\n", message);
 		List<String> terms = nlpUtils.extractTermInTweet(message);
 

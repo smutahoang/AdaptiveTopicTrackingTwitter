@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import hoang.l3s.attt.model.Tweet;
@@ -274,23 +275,18 @@ public class LanguageModel {
 
 	public void save(String filename) {
 		try {
-			BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
-			Set<String> prefixes = prefix2TermProbMap.keySet();
-			Iterator<String> preIter = prefixes.iterator();
 			int num = 0;
 			double sum = 0;
-			while (preIter.hasNext()) {
-				String prefix = preIter.next();
-				HashMap<String, Double> termProbMap = prefix2TermProbMap.get(prefix);
-				Set<String> keys = termProbMap.keySet();
-				Iterator<String> iter = keys.iterator();
-				while (iter.hasNext()) {
-					String term = iter.next();
-					int prefixCount = prefixCountMap.get(prefix);
+			BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+			for (Map.Entry<String, HashMap<String, Double>> prefixPair : prefix2TermProbMap.entrySet()) {
+				String prefix = prefixPair.getKey();
+				HashMap<String, Double> termProbMap = prefixPair.getValue();
+				int prefixCount = prefixCountMap.get(prefix);
+				for (Map.Entry<String, Double> termPair : termProbMap.entrySet()) {
+					String term = termPair.getKey();
 					int termCount = prefix2TermCountMap.get(prefix).get(term);
-					double prob = termProbMap.get(term);
-					bw.write(String.format("%s,%s,%d,%d,%f", prefix, term, prefixCount, termCount, prob));
-					bw.write("\n");
+					double prob = termPair.getValue();
+					bw.write(String.format("%d,%d,%f,%s,%s\n", prefixCount, termCount, prob, prefix, term));
 					num++;
 					sum += prob;
 				}

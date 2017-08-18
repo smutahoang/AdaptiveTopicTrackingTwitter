@@ -210,6 +210,8 @@ public class LMSmoothingUtils {
 				String term = termIter.next();
 				sumProb += prefix2TermProbMap.get(prefix).get(term);
 			}
+
+			termIter = terms.iterator();
 			while (termIter.hasNext()) {
 				String term = termIter.next();
 				double prob = prefix2TermProbMap.get(prefix).get(term) / sumProb;
@@ -262,6 +264,32 @@ public class LMSmoothingUtils {
 
 		bgLM.setTotalPrefixStartCount(bgLM.getTotalPrefixStartCount() + fgLM.getTotalPrefixStartCount());
 		bgLM.setTotalPrefixEndCount(bgLM.getTotalPrefixEndCount() + fgLM.getTotalPrefixEndCount());
+
+		HashMap<String, Integer> bgPrefixCountMap = bgLM.getPrefixCountMap();
+		HashMap<String, HashMap<String, Integer>> bgPrefix2TermCountMap = bgLM.getPrefix2TermCountMap();
+
+		for (Map.Entry<String, Integer> prefixPair : fgPrefixCountMap.entrySet()) {
+			String prefix = prefixPair.getKey();
+			int count = prefixPair.getValue();
+
+			if (bgPrefixCountMap.containsKey(prefix)) {
+				bgPrefixCountMap.put(prefix, bgPrefixCountMap.get(prefix) + count);
+				HashMap<String, Integer> bgTermCount = bgPrefix2TermCountMap.get(prefix);
+				for (Map.Entry<String, Integer> termPair : fgPrefix2TermCountMap.get(prefix).entrySet()) {
+					String term = termPair.getKey();
+					count = termPair.getValue();
+					if (bgTermCount.containsKey(term)) {
+						bgTermCount.put(term, count + bgTermCount.get(term));
+					} else {
+						bgTermCount.put(term, count);
+					}
+				}
+			} else {
+				bgPrefixCountMap.put(prefix, count);
+				bgPrefix2TermCountMap.put(prefix, fgPrefix2TermCountMap.get(prefix));
+			}
+
+		}
 
 		if (bgLM.nGram() == 1)
 			return;
