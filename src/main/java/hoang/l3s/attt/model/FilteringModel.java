@@ -4,7 +4,13 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.List;
 
+import hoang.l3s.attt.configure.Configure;
+import hoang.l3s.attt.configure.Configure.UpdatingScheme;
+
 public abstract class FilteringModel {
+	protected int nRelevantTweets;
+	protected int timeStep;
+	protected long startTime;
 
 	/***
 	 * initialize the filtering model from a set of first tweets
@@ -21,6 +27,21 @@ public abstract class FilteringModel {
 	 * @return relevant score
 	 */
 	public abstract double relevantScore(Tweet tweet);
+
+	public boolean isToUpdate(Tweet tweet) {
+		if (Configure.updatingScheme == UpdatingScheme.Periodic) {
+			long diff = tweet.getPublishedTime() - startTime;
+			int time = (int) (diff / Configure.TIME_STEP_WIDTH);
+			if (time > timeStep) {
+				return true;
+			}
+		} else {
+			if (nRelevantTweets % Configure.NUMBER_NEW_RELEVANT_TWEETS == 0) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/***
 	 * update model once a new relevant tweet is identified

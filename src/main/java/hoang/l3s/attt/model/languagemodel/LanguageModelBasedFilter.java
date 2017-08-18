@@ -56,7 +56,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 	public void updateForget(Tweet tweet) {
 		updateBuffer.add(tweet);
 
-		if (updateBuffer.size() >= Configure.updateBufferCapacity) {
+		if (updateBuffer.size() >= Configure.NUMBER_NEW_RELEVANT_TWEETS) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
 			// bgLanguageModel.train(updateBuffer, Configure.smoothingType);
 			LanguageModel fgLanguageModel = new LanguageModel(nGram, preprocessingUtils, lmSmoothingUtils);
@@ -69,7 +69,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 
 	public void updataQueue(Tweet tweet) {
 		updateBuffer.add(tweet);
-		if (updateBuffer.size() >= Configure.queueCapacity) {
+		if (updateBuffer.size() >= Configure.QUEUE_CAPACITY) {
 			System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~update");
 			// bgLanguageModel.train(updateBuffer, Configure.smoothingType);
 			LanguageModel fgLanguageModel = new LanguageModel(nGram, preprocessingUtils, lmSmoothingUtils);
@@ -77,12 +77,12 @@ public class LanguageModelBasedFilter extends FilteringModel {
 			lmSmoothingUtils.update(bgLanguageModel, fgLanguageModel, Configure.smoothingType);
 			bgLanguageModel.incNUpdates();
 
-			int n = Configure.queueCapacity - Configure.updateBufferCapacity;
+			int n = Configure.QUEUE_CAPACITY - Configure.NUMBER_NEW_RELEVANT_TWEETS;
 			for (int i = 0; i < n; i++) {
-				updateBuffer.set(i, updateBuffer.get(i + Configure.updateBufferCapacity));
+				updateBuffer.set(i, updateBuffer.get(i + Configure.NUMBER_NEW_RELEVANT_TWEETS));
 			}
-			for (int i = 0; i < Configure.updateBufferCapacity; i++) {
-				updateBuffer.remove(Configure.queueCapacity - i - 1);
+			for (int i = 0; i < Configure.NUMBER_NEW_RELEVANT_TWEETS; i++) {
+				updateBuffer.remove(Configure.QUEUE_CAPACITY - i - 1);
 			}
 		}
 	}
