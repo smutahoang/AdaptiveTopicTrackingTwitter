@@ -2,15 +2,14 @@ package hoang.l3s.attt.model.pseudosupervised;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Scanner;
 
 import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
+import weka.core.BinarySparseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
 import weka.core.SparseInstance;
@@ -38,11 +37,11 @@ public class Classifier {
 
 	public Classifier(List<Tweet> positiveSamples, List<Tweet> negativeSamples,
 			TweetPreprocessingUtils _preprocessingUtils) {
+                                   
 		preprocessingUtils = _preprocessingUtils;
 
-		attributes = featureSelection(positiveSamples);
-		// TODO:add option + function to also do feature selection using both
-		// positive & negative tweets
+		attributes = featureSelection(positiveSamples, negativeSamples);
+		System.out.println(attributes.size());
 
 		instances = getListOfInstances(positiveSamples, negativeSamples);
 
@@ -75,7 +74,7 @@ public class Classifier {
 		int nOfAttributes = attributes.size();
 
 		for (int i = 0; i < nOfInstances; i++)
-			instances.add(new SparseInstance(nOfAttributes));
+			instances.add(new BinarySparseInstance(nOfAttributes));
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < positiveSamples.size(); i++) {
@@ -95,12 +94,17 @@ public class Classifier {
 	}
 
 	// get list of features
-	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples) {
+	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
+		
+		ArrayList<Tweet> samples = new ArrayList<Tweet>();
+		samples.addAll(positiveSamples);
+		samples.addAll(negativeSamples);
+		
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		attribute2Index = new HashMap<String, Integer>();
-
+		
 		int attributeIndex = 0;
-		for (Tweet tweet : positiveSamples) {
+		for (Tweet tweet : samples) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			for (String term : terms) {
 				if (!attribute2Index.containsKey(term)) {
@@ -128,12 +132,10 @@ public class Classifier {
 	public void getInstance(Tweet tweet, Instance instance) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 
-		// HashSet<Attribute> attributeSet = new HashSet<Attribute>(attributes);
 		int count = 0;
 		for (String term : termsofTweet) {
 			if (attribute2Index.containsKey(term)) {
-				int index = attribute2Index.get(term);
-				instance.setValue(index, 1);
+				instance.setValue(attribute2Index.get(term), 0);
 			} else {
 				count++;
 			}
@@ -142,18 +144,6 @@ public class Classifier {
 		// [[MISS]] attribute
 		instance.setValue(attributes.get(attributes.size() - 2), ((double) count / termsofTweet.size()));
 
-		// we need to know the index of the attribute that equals to term, so I
-		// still havenot found to improve the complexity
-
-		/*
-		 * HashSet<String> terms = new HashSet<String>(termsofTweet); for (int j
-		 * = 0; j < attributes.size() - 1; j++) { Attribute att =
-		 * attributes.get(j);
-		 * 
-		 * // Tuan-Anh: mind the complexity if (!terms.contains(att.name()))
-		 * instance.setValue(att, 0); else instance.setValue(att, 1); }
-		 */
-
 	}
 
 	// get class of a new instance
@@ -161,7 +151,7 @@ public class Classifier {
 		String result = "";
 		Instances test = new Instances(Configure.problemName, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
-		Instance ins = new SparseInstance(attributes.size());
+		Instance ins = new BinarySparseInstance(attributes.size());
 		getInstance(tweet, ins);
 		test.add(ins);
 		try {
