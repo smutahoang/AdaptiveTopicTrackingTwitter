@@ -41,7 +41,6 @@ public class Classifier {
 		preprocessingUtils = _preprocessingUtils;
 
 		attributes = featureSelection(positiveSamples, negativeSamples);
-		System.out.println(attributes.size());
 
 		instances = getListOfInstances(positiveSamples, negativeSamples);
 
@@ -73,20 +72,21 @@ public class Classifier {
 		int nOfInstances = positiveSamples.size() + negativeSamples.size();
 		int nOfAttributes = attributes.size();
 
-		for (int i = 0; i < nOfInstances; i++)
-			instances.add(new BinarySparseInstance(nOfAttributes));
+
+		//for (int i = 0; i < nOfInstances; i++)
+		//	instances.add(new SparseInstance(nOfAttributes));
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < positiveSamples.size(); i++) {
-
-			getInstance(positiveSamples.get(i), instances.get(i));
+			
+			instances.add(getInstance(positiveSamples.get(i)));
 			instances.get(i).setValue(attributes.get(nOfAttributes - 1), Configure.rClassName);
 		}
 		int nPositiveInstances = positiveSamples.size();
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
-			getInstance(negativeSamples.get(i), instances.get(nPositiveInstances + i));
+			instances.add(getInstance(negativeSamples.get(i)));
 			instances.get(nPositiveInstances + i).setValue(attributes.get(attributes.size() - 1),
 					Configure.nonrClassName);
 		}
@@ -98,7 +98,7 @@ public class Classifier {
 		
 		ArrayList<Tweet> samples = new ArrayList<Tweet>();
 		samples.addAll(positiveSamples);
-		samples.addAll(negativeSamples);
+		//samples.addAll(negativeSamples);
 		
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		attribute2Index = new HashMap<String, Integer>();
@@ -129,20 +129,21 @@ public class Classifier {
 	}
 
 	// -- extract feature structure of a tweet
-	public void getInstance(Tweet tweet, Instance instance) {
+	public Instance getInstance(Tweet tweet) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
-
+		Instance ins = new BinarySparseInstance(attributes.size());
 		int count = 0;
 		for (String term : termsofTweet) {
 			if (attribute2Index.containsKey(term)) {
-				instance.setValue(attribute2Index.get(term), 0);
+				ins.setValue(attribute2Index.get(term), 0);
 			} else {
 				count++;
 			}
 		}
 
 		// [[MISS]] attribute
-		instance.setValue(attributes.get(attributes.size() - 2), ((double) count / termsofTweet.size()));
+		ins.setValue(attributes.get(attributes.size() - 2), ((double) count / termsofTweet.size()));
+		return ins;
 
 	}
 
@@ -151,8 +152,8 @@ public class Classifier {
 		String result = "";
 		Instances test = new Instances(Configure.problemName, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
-		Instance ins = new BinarySparseInstance(attributes.size());
-		getInstance(tweet, ins);
+		
+		Instance ins = getInstance(tweet);
 		test.add(ins);
 		try {
 			result = test.classAttribute().value((int) svm.classifyInstance(test.get(0)));
