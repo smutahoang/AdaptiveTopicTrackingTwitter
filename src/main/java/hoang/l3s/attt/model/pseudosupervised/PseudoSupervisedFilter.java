@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -35,7 +37,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	public void filter(TweetStream stream, String ouputPath) {
 		// TODO Auto-generated method stub
 	}
@@ -75,7 +77,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			if (flag) {
 				double r = Math.random();
 
-				if (r < (double) Configure.negativeSamplesRatio / 100)
+				if (r < (double) Configure.NONRELEVANT_TWEET_SAMPLING_RATIO / 100)
 
 					negativeSamples.add(tweet);
 			}
@@ -151,7 +153,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		HashSet<String> keywords = new HashSet<String>();
 		HashMap<String, Double> tfIdfTermsMap = gettfIdfTermsMap(firstOfTweets, windowTweets);
 		// getTopLTfIdfTerms is a function that I added into RankingUtils.java
-		keywords = RankingUtils.getTopKTfIdfTerms(Configure.nExclusionTerms, tfIdfTermsMap);
+		keywords = RankingUtils.getTopKTfIdfTerms(Configure.NUMBER_EXCLUSION_TERMS, tfIdfTermsMap);
 		return keywords;
 	}
 
@@ -163,25 +165,25 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	public void update(Tweet tweet) {
 		// TODO Auto-generated method stub
 	}
-	
+
 	public void removeOldestTweets(List<Tweet> tweets) {
 
-		int nRemovingTweets = tweets.size() * Configure.removingRatio / 100;
+		int nRemovingTweets = tweets.size() * Configure.OLD_RELEVANT_TWEET_REMOVING_RATIO / 100;
 		for (int i = nRemovingTweets; i < tweets.size(); i++) {
 			tweets.set(i - nRemovingTweets, tweets.get(i));
 		}
 		for (int i = 0; i < nRemovingTweets; i++) {
-			tweets.remove(tweets.size()-1);
+			tweets.remove(tweets.size() - 1);
 		}
-		
+
 	}
-	
+
 	// remove k oldest tweets in window
 	public List<Tweet> removeTweetinWindow(List<Tweet> tweets, int k) {
 		List<Tweet> results = new ArrayList<Tweet>();
 		PriorityQueue<KeyValue_Pair> queue = new PriorityQueue<KeyValue_Pair>();
 		int n = tweets.size();
-		for (int i = 0; i< n; i++) {
+		for (int i = 0; i < n; i++) {
 			Tweet currentTweet = tweets.get(i);
 			if (queue.size() < n - k) {
 				queue.add(new KeyValue_Pair(i, currentTweet.getPublishedTime()));
@@ -190,15 +192,31 @@ public class PseudoSupervisedFilter extends FilteringModel {
 				if (head.getDoubleValue() < currentTweet.getPublishedTime()) {
 					queue.poll();
 					queue.add(new KeyValue_Pair(i, currentTweet.getPublishedTime()));
-					
+
 				}
 			}
 		}
-		
-		while(!queue.isEmpty())
+
+		// O(N * log(N-K)) = N log(N)
+
+		while (!queue.isEmpty())
 			results.add(tweets.get(queue.poll().getIntKey()));
 		return results;
 	}
+
+	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets,
+			PriorityQueue<Tweet> windowTweets) {
+		// This is only to say that: maintaining a queue for windowTweets is
+		// more efficient
+	}
+
+	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets,
+			LinkedList<Tweet> windowTweets) {
+		// use a linked-list to store windowTweets so that we can remove old
+		// tweets faster (in constant time)
+		// windowTweets.removeFirst();
+	}
+
 	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets, List<Tweet> windowTweets) {
 		File file = new File(ouputPath);
 		if (file.exists()) {
@@ -207,41 +225,47 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		Tweet tweet = null;
 		int count = 0;
 		while ((tweet = stream.getTweet()) != null) {
-			if(count < 100000) {
+			if (count < 100000) {
 				String result = classifier.classify(tweet);
-				
-				if (result.equalsIgnoreCase(Configure.rClassName)) {
-					firstOfTweets.add(tweet); // add tweet into the set of positive tweets
+				if (result.equalsIgnoreCase(Configure.RELEVANT_CLASS)) {
+					firstOfTweets.add(tweet); // add tweet into the set of
+												// positive tweets
 					outputTweet(tweet, ouputPath);
-					
+
 					nRelevantTweets++;
 
 					// check if is the update time for update
 					long time = tweet.getPublishedTime();
 					startTime = windowTweets.get(0).getPublishedTime();
-					if(isToUpdate(tweet)) {
-						// re-training 
+					if (isToUpdate(tweet)) {
+						// re-training
 						System.out.println("....................................update");
 						publishedTimeofLastTweet = time;
-						
-						//(optional) remove top N oldest tweets in set of first tweets
-						//removeOldestTweets(firstOfTweets);
-						
-						keywords = getKeyWords(firstOfTweets, windowTweets);// window with new time
+
+						// (optional) remove top N oldest tweets in set of first
+						// tweets
+						removeOldestTweets(firstOfTweets);
+
+						keywords = getKeyWords(firstOfTweets, windowTweets);// window
+																			// with
+																			// new
+																			// time
 						List<Tweet> negativeSamples = getNegativeSamples(firstOfTweets, windowTweets);
 						classifier = new Classifier(firstOfTweets, negativeSamples, preprocessingUtils);
 					}
-				}  else {
-					//insert t to Window and remove some old tweets in W (probabilistically)
-					windowTweets = removeTweetinWindow(windowTweets, Configure.nTweetsRemovedFromWindow);
-					windowTweets.add(tweet);
+				} else {
+					// insert t to Window and remove some old tweets in W
+					// (probabilistically)
+					// windowTweets = removeTweetinWindow(windowTweets,
+					// Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW);
+					// windowTweets.add(tweet);
 				}
 				count++;
 			} else {
 				break;
 			}
 		}
-		
+
 	}
 
 }

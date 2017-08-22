@@ -36,21 +36,21 @@ public class Configure {
 	public static String startData = "2017-01-28";
 	public static double perplexityThreshold;
 	public static int QUEUE_CAPACITY = 1000;
-	
 
 	// constants for pseudo supervised model
-	public static String rClassName = "RELEVANT";
-	public static String nonrClassName = "NONRELEVANT";
-	public static int nExclusionTerms = 200;
-	public static int negativeSamplesRatio = 20;
-	public static int removingRatio = 10;
-	public static String missAttribute = "[[MISS_ATTRIBUTE]]";
-	public static String classAttribute = "[[CLASS_ATTRIBUTE]]";
-	public static String problemName = "TWEET_CLASSIFICATION";
-	public static int nTweetsRemovedFromWindow = 1;
+	public static String RELEVANT_CLASS = "RELEVANT";
+	public static String NONRELEVANT_CLASS = "NONRELEVANT";
+	public static int NUMBER_EXCLUSION_TERMS = 200;
+	public static int NONRELEVANT_TWEET_SAMPLING_RATIO = 20;
+	public static int OLD_RELEVANT_TWEET_REMOVING_RATIO = 10;
+	public static String MISSING_ATTRIBUTE = "[[MISS_ATTRIBUTE]]";
+	public static String CLASS_ATTRIBUTE = "[[CLASS_ATTRIBUTE]]";
+	public static String PROBLEM_NAME = "TWEET_CLASSIFICATION";
+	public static int NUMBER_OLD_TWEET_REMOVING_WINDOW = 1;
+	public static boolean USE_NEGATIVE_TWEET_FEATURE_SELECTION = false;
 
 	public static int updatingTime = 360000; // update every hour
-	
+
 	public static String dirPath;
 	public static String stopwordsPath;
 	public static String firstTweetsPath;
@@ -59,14 +59,12 @@ public class Configure {
 
 	public Configure() {
 		if (author == Author.hoang) {
-			// dirPath = "/home/hoang/attt";
-			dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+			dirPath = "/home/hoang/attt";
+			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		} else if (author == Author.nguyen) {
 			dirPath = "/home/hoang/attt";
 			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
-		}
-
-		else {
+		} else {
 			if (runningOnLocal) {
 				dirPath = "/Users/renlipeng/Documents/topicTracking";
 			} else {
