@@ -47,6 +47,7 @@ public class Configure {
 	public static String missAttribute = "[[MISS_ATTRIBUTE]]";
 	public static String classAttribute = "[[CLASS_ATTRIBUTE]]";
 	public static String problemName = "TWEET_CLASSIFICATION";
+	public static int nTweetsRemovedFromWindow = 1;
 
 	public static int updatingTime = 360000; // update every hour
 	
