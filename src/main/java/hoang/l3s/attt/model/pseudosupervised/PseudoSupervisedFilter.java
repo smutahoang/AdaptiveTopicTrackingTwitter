@@ -7,18 +7,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.PriorityBlockingQueue;
 
 import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
-import hoang.l3s.attt.model.graphbased.AdjacentTerm;
-import hoang.l3s.attt.utils.KeyValue_Pair;
 import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
@@ -115,7 +109,6 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		// get idf
 
 		for (Tweet tweet : windowTweets) {
-			// ??
 			if (tweet.getPublishedTime() > publishedTimeofLastTweet)
 				break;
 			nTweetsInWindow++;
@@ -178,33 +171,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 
 	}
 
-	// remove k oldest tweets in window
-	public List<Tweet> removeTweetinWindow(List<Tweet> tweets, int k) {
-		List<Tweet> results = new ArrayList<Tweet>();
-		PriorityQueue<KeyValue_Pair> queue = new PriorityQueue<KeyValue_Pair>();
-		int n = tweets.size();
-		for (int i = 0; i < n; i++) {
-			Tweet currentTweet = tweets.get(i);
-			if (queue.size() < n - k) {
-				queue.add(new KeyValue_Pair(i, currentTweet.getPublishedTime()));
-			} else {
-				KeyValue_Pair head = queue.peek();
-				if (head.getDoubleValue() < currentTweet.getPublishedTime()) {
-					queue.poll();
-					queue.add(new KeyValue_Pair(i, currentTweet.getPublishedTime()));
-
-				}
-			}
-		}
-
-		// O(N * log(N-K)) = N log(N)
-
-		while (!queue.isEmpty())
-			results.add(tweets.get(queue.poll().getIntKey()));
-		return results;
-	}
-
-	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets,
+	/*public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets,
 			PriorityQueue<Tweet> windowTweets) {
 		// This is only to say that: maintaining a queue for windowTweets is
 		// more efficient
@@ -215,9 +182,9 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		// use a linked-list to store windowTweets so that we can remove old
 		// tweets faster (in constant time)
 		// windowTweets.removeFirst();
-	}
+	}*/
 
-	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets, List<Tweet> windowTweets) {
+	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets, LinkedList<Tweet> windowTweets) {
 		File file = new File(ouputPath);
 		if (file.exists()) {
 			file.delete();
@@ -246,19 +213,15 @@ public class PseudoSupervisedFilter extends FilteringModel {
 						// tweets
 						removeOldestTweets(firstOfTweets);
 
-						keywords = getKeyWords(firstOfTweets, windowTweets);// window
-																			// with
-																			// new
-																			// time
+						keywords = getKeyWords(firstOfTweets, windowTweets);
 						List<Tweet> negativeSamples = getNegativeSamples(firstOfTweets, windowTweets);
 						classifier = new Classifier(firstOfTweets, negativeSamples, preprocessingUtils);
 					}
 				} else {
 					// insert t to Window and remove some old tweets in W
-					// (probabilistically)
-					// windowTweets = removeTweetinWindow(windowTweets,
-					// Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW);
-					// windowTweets.add(tweet);
+					/*for(int i = 0; i<Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW; i++)
+						windowTweets.removeFirst();
+					windowTweets.add(tweet);*/
 				}
 				count++;
 			} else {

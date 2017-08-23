@@ -22,8 +22,6 @@ public class Classifier {
 	 * @param tweets
 	 */
 
-	// private static int thresold = 10; // only terms appear more than 10 times
-	// as the features
 	private TweetPreprocessingUtils preprocessingUtils;
 	private ArrayList<Attribute> attributes;
 	private ArrayList<Instance> instances;
@@ -72,50 +70,26 @@ public class Classifier {
 	public ArrayList<Instance> getListOfInstances(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
 		ArrayList<Instance> instances = new ArrayList<Instance>();
 
-		// int nOfInstances = positiveSamples.size() + negativeSamples.size();
-
 		int nOfAttributes = attributes.size();
-
-		// for (int i = 0; i < nOfInstances; i++)
-		// instances.add(new SparseInstance(nOfAttributes));
 
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < positiveSamples.size(); i++) {
-			// Instance instance = getInstance(positiveSamples.get(i));
 			Instance instance = getSparseInstance(positiveSamples.get(i));
 			instance.setValue(attributes.get(nOfAttributes - 1), Configure.RELEVANT_CLASS);
 			instances.add(instance);
-
-			// instances.add(getInstance(positiveSamples.get(i)));
-			// instances.get(i).setValue(attributes.get(nOfAttributes - 1),
-			// Configure.RELEVANT_CLASS);
 		}
-		// int nPositiveInstances = positiveSamples.size();
-
+		
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
-			// Instance instance = getInstance(negativeSamples.get(i));
 			Instance instance = getSparseInstance(negativeSamples.get(i));
 			instance.setValue(attributes.get(nOfAttributes - 1), Configure.NONRELEVANT_CLASS);
-
 			instances.add(instance);
-
-			// instances.add(getInstance(negativeSamples.get(i)));
-			// instances.get(nPositiveInstances +
-			// i).setValue(attributes.get(attributes.size() - 1),
-			// Configure.NONRELEVANT_CLASS);
 		}
 		return instances;
 	}
 
 	// get list of features
 	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
-
-		// ArrayList<Tweet> samples = new ArrayList<Tweet>();
-		// samples.addAll(positiveSamples);
-		// if (Configure.USE_NEGATIVE_TWEET_FEATURE_SELECTION) {
-		// samples.addAll(negativeSamples);
-		// }
 
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		attribute2Index = new HashMap<String, Integer>();
@@ -213,14 +187,14 @@ public class Classifier {
 		Instances test = new Instances(Configure.PROBLEM_NAME, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
 
-		// Instance ins = getInstance(tweet);
 		Instance ins = getSparseInstance(tweet);
 		test.add(ins);
 		try {
 			int v = (int) svm.classifyInstance(test.get(0));
 			// TODO
 			// ? what is the range of svm.classifyInstance(instance)?
-			System.out.printf("\t\t v = %d\n", v);
+			System.out.println("result of classification: "+svm.classifyInstance(test.get(0)));
+			//System.out.printf("\t\t v = %d\n", v);
 			result = test.classAttribute().value(v);
 
 		} catch (Exception e) {

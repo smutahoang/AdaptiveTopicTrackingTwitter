@@ -5,6 +5,7 @@ import java.io.FileReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -50,6 +51,41 @@ public class Tester {
 
 			br.close();
 			return firstTweets;
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		return null;
+	}
+	
+	static LinkedList<Tweet> getTweetsInWindow(String file) {
+		try {
+			String dateformat = "EEE MMM dd HH:mm:ss +0000 yyyy";
+
+			SimpleDateFormat dateTimeFormater = new SimpleDateFormat(dateformat, Locale.US);
+			JsonParser jsonParser = new JsonParser();
+			LinkedList<Tweet> tweetsInWindow = new LinkedList<Tweet>();
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				JsonObject jsonTweet = (JsonObject) jsonParser.parse(line);
+				// to get english tweet without delete tweet, the count is 105
+				{
+					if (jsonTweet.has("delete"))
+						continue;
+
+					if (!jsonTweet.get("lang").toString().equals("\"en\""))
+						continue;
+				}
+				System.out.printf("time = |%s|\n", jsonTweet.get("created_at").getAsString());
+				long createdAt = dateTimeFormater.parse(jsonTweet.get("created_at").getAsString()).getTime();
+				Tweet tweet = new Tweet(jsonTweet.get("id_str").getAsString(), jsonTweet.get("text").getAsString(),
+						((JsonObject) jsonTweet.get("user")).get("id").getAsString(), createdAt);
+				tweetsInWindow.add(tweet);
+			}
+
+			br.close();
+			return tweetsInWindow;
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
@@ -128,7 +164,7 @@ public class Tester {
 
 				List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
 
-				List<Tweet> windowTweets = getFirstTweets(windowTweetsPath);
+				LinkedList<Tweet> windowTweets = getTweetsInWindow(windowTweetsPath);
 
 				PseudoSupervisedFilter filter = new PseudoSupervisedFilter();
 				filter.init(firstTweets, windowTweets);
