@@ -55,6 +55,17 @@ public class Classifier {
 			dataSet.add(instances.get(i));
 		}
 		svm = new SMO();
+
+		// to print out attributes' weight
+		double[] weights = svm.sparseWeights()[0][1];
+		int[] indices = svm.sparseIndices()[0][1];
+		// weight[i] is now weight of attribute indices[i]
+
+		for (int i = 0; i < indices.length; i++) {
+			int j = indices[i];
+			System.out.printf("attribute[%d]: name = %s weight = %f\n", j, attributes.get(j).name(), weights[i]);
+		}
+
 		try {
 			svm.buildClassifier(dataSet);
 
@@ -78,7 +89,7 @@ public class Classifier {
 			instance.setValue(attributes.get(nOfAttributes - 1), Configure.RELEVANT_CLASS);
 			instances.add(instance);
 		}
-		
+
 		// iterate all positive samples and add into dataset
 		for (int i = 0; i < negativeSamples.size(); i++) {
 			Instance instance = getSparseInstance(negativeSamples.get(i));
@@ -156,7 +167,13 @@ public class Classifier {
 
 	public Instance getSparseInstance(Tweet tweet) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
+
+		// Tuan-Anh: use other constructor for constructing sparse instance
+		// SparseInstance(double weight, double[] attValues, int[] indices, int
+		// maxNumValues)
+
 		Instance ins = new SparseInstance(attributes.size());
+
 		int count = 0;
 		for (String term : termsofTweet) {
 			if (attribute2Index.containsKey(term)) {
@@ -193,8 +210,8 @@ public class Classifier {
 			int v = (int) svm.classifyInstance(test.get(0));
 			// TODO
 			// ? what is the range of svm.classifyInstance(instance)?
-			System.out.println("result of classification: "+svm.classifyInstance(test.get(0)));
-			//System.out.printf("\t\t v = %d\n", v);
+			System.out.println("result of classification: " + svm.classifyInstance(test.get(0)));
+			// System.out.printf("\t\t v = %d\n", v);
 			result = test.classAttribute().value(v);
 
 		} catch (Exception e) {
