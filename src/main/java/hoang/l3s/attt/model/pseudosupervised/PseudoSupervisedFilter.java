@@ -70,9 +70,9 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			// positive sample
 			if (flag) {
 				double r = Math.random();
-
-				if (r < (double) Configure.NONRELEVANT_TWEET_SAMPLING_RATIO / 100)
-
+				// set the size of negative sample to be ten times the size of positive sample
+				double nNegativeSamples = (double) Configure.NONRELEVANT_TWEET_SAMPLING_RATIO * firstOfTweets.size() / 100;
+				if (r <  nNegativeSamples)
 					negativeSamples.add(tweet);
 			}
 		}
@@ -175,13 +175,6 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			PriorityQueue<Tweet> windowTweets) {
 		// This is only to say that: maintaining a queue for windowTweets is
 		// more efficient
-	}
-
-	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets,
-			LinkedList<Tweet> windowTweets) {
-		// use a linked-list to store windowTweets so that we can remove old
-		// tweets faster (in constant time)
-		// windowTweets.removeFirst();
 	}*/
 
 	public void filter(TweetStream stream, String ouputPath, List<Tweet> firstOfTweets, LinkedList<Tweet> windowTweets) {
@@ -204,9 +197,11 @@ public class PseudoSupervisedFilter extends FilteringModel {
 					// check if is the update time for update
 					long time = tweet.getPublishedTime();
 					startTime = windowTweets.get(0).getPublishedTime();
+					System.out.println("time step: " + timeStep);
 					if (isToUpdate(tweet)) {
 						// re-training
-						System.out.println("....................................update");
+						System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> update");
+						
 						publishedTimeofLastTweet = time;
 
 						// (optional) remove top N oldest tweets in set of first
@@ -219,9 +214,10 @@ public class PseudoSupervisedFilter extends FilteringModel {
 					}
 				} else {
 					// insert t to Window and remove some old tweets in W
-					/*for(int i = 0; i<Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW; i++)
+					System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>REMOVE");
+					for(int i = 0; i<Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW; i++)
 						windowTweets.removeFirst();
-					windowTweets.add(tweet);*/
+					windowTweets.add(tweet);
 				}
 				count++;
 			} else {

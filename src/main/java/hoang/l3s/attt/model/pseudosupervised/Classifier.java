@@ -54,21 +54,24 @@ public class Classifier {
 		for (int i = 0; i < instances.size(); i++) {
 			dataSet.add(instances.get(i));
 		}
+		System.out.println("=================Starting Training Model=========================");
 		svm = new SMO();
 
-		// to print out attributes' weight
-		double[] weights = svm.sparseWeights()[0][1];
-		int[] indices = svm.sparseIndices()[0][1];
-		// weight[i] is now weight of attribute indices[i]
-
-		for (int i = 0; i < indices.length; i++) {
-			int j = indices[i];
-			System.out.printf("attribute[%d]: name = %s weight = %f\n", j, attributes.get(j).name(), weights[i]);
-		}
+		
 
 		try {
 			svm.buildClassifier(dataSet);
+			System.out.println("=================Finishing Training Model=========================");
+			// to print out attributes' weight
+			/*double[] weights = svm.sparseWeights()[0][1];
+			int[] indices = svm.sparseIndices()[0][1];
+			// weight[i] is now weight of attribute indices[i]
 
+			for (int i = 0; i < indices.length; i++) {
+				int j = indices[i];
+				System.out.printf("attribute[%d]: name = %s weight = %f\n", j, attributes.get(j).name(), weights[i]);
+			}
+*/
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -146,33 +149,16 @@ public class Classifier {
 		return attributes;
 	}
 
-	// -- extract feature structure of a tweet
-	public Instance getInstance(Tweet tweet) {
-		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
-		Instance ins = new BinarySparseInstance(attributes.size());
-		int count = 0;
-		for (String term : termsofTweet) {
-			if (attribute2Index.containsKey(term)) {
-				ins.setValue(attribute2Index.get(term), 0);
-			} else {
-				count++;
-			}
-		}
-
-		// [[MISS]] attribute
-		ins.setValue(attributes.get(attributes.size() - 2), ((double) count / termsofTweet.size()));
-		return ins;
-
-	}
-
 	public Instance getSparseInstance(Tweet tweet) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 
 		// Tuan-Anh: use other constructor for constructing sparse instance
 		// SparseInstance(double weight, double[] attValues, int[] indices, int
 		// maxNumValues)
-
-		Instance ins = new SparseInstance(attributes.size());
+		
+		double[] attValues = new double[attributes.size()];
+		Instance ins = new SparseInstance(1, attValues);
+		//Instance ins = new SparseInstance(attributes.size());
 
 		int count = 0;
 		for (String term : termsofTweet) {
@@ -184,18 +170,16 @@ public class Classifier {
 		}
 
 		// [[MISSING_ATTRIBUTE]]
-		ins.setValue(attributes.get(attributes.size() - 2), ((double) count / termsofTweet.size()));
+		ins.setValue(attributes.size()-2, ((double) count / termsofTweet.size()));
+		
 		return ins;
 
 	}
 
 	// get class of a new instance
 	public String classify(Tweet tweet) {
-		System.out.printf("[Classification] tweet = %s\n", tweet.getText().replace('\n', ' '));
-		for (int i = 0; i < tweet.getTerms(preprocessingUtils).size(); i++) {
-			System.out.printf("\t\tterm[%d] = %s\n", i, tweet.getTerms(preprocessingUtils).get(i));
-		}
-		System.out.println();
+		
+		System.out.printf("\n\n[Classification] tweet = %s\n", tweet.getText().replace('\n', ' '));
 
 		if (tweet.getTerms(preprocessingUtils).size() == 0)
 			return Configure.NONRELEVANT_CLASS;
@@ -205,13 +189,14 @@ public class Classifier {
 		test.setClassIndex(attributes.size() - 1);
 
 		Instance ins = getSparseInstance(tweet);
+		
 		test.add(ins);
+		
 		try {
 			int v = (int) svm.classifyInstance(test.get(0));
+			
 			// TODO
-			// ? what is the range of svm.classifyInstance(instance)?
-			System.out.println("result of classification: " + svm.classifyInstance(test.get(0)));
-			// System.out.printf("\t\t v = %d\n", v);
+			
 			result = test.classAttribute().value(v);
 
 		} catch (Exception e) {
