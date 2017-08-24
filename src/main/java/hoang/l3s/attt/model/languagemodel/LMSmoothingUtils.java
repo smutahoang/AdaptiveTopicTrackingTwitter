@@ -9,17 +9,13 @@ import hoang.l3s.attt.configure.Configure;
 
 public class LMSmoothingUtils {
 
-	public enum SmoothingType {
-		StupidBackoff, JelinekMercer, Bayesian, AbsoluteDiscounting, NoSmoothing
-	}
-
 	private static double alpha = 0.3;
 	private static double lambda = 0.3;
 	private static double delta = 0.9;
 	private static double mu = 5000;
 
-	public String formatPrintProb(int ngram, String preTerm, String term, double preCount, double count, double prob) {
-		return String.format("n:%d,P(%s|%s) = %.0f|%.0f = %f", ngram, term, preTerm, count, preCount, prob);
+	public String formatPrintProb(String preTerm, String term, double preCount, double count, double prob) {
+		return String.format("P(%s|%s) = %.0f|%.0f = %f", term, preTerm, count, preCount, prob);
 	}
 
 	/***
@@ -40,11 +36,11 @@ public class LMSmoothingUtils {
 	}
 
 	public double getSmoothedProb(int prefixCount, int termCount, double bgProb, int nNewTermsInFgCount,
-			SmoothingType smoothingType) {
+			Configure.SmoothingType smoothingType) {
 
 		double prob = 0;
 		switch (smoothingType) {
-		case StupidBackoff:
+		case STUPID_BACKOFF:
 			if (termCount != 0) {
 				prob = (1 / (1 + alpha)) * (termCount / prefixCount);
 			} else {
@@ -57,19 +53,19 @@ public class LMSmoothingUtils {
 			// }
 			break;
 
-		case JelinekMercer:
+		case JELINEK_MERCER:
 			prob = lambda * termCount / prefixCount + (1 - lambda) * bgProb;
 			break;
 
-		case Bayesian:
+		case BAYESIAN:
 			prob = (termCount + mu * bgProb) / (prefixCount + mu);
 			break;
 
-		case AbsoluteDiscounting:
+		case ABSOLUTE_DISCOUNTING:
 			prob = Math.max(termCount - delta, 0) / prefixCount + (delta * nNewTermsInFgCount / prefixCount) * bgProb;
 			break;
 
-		case NoSmoothing:
+		case NO_SMOOTHING:
 			prob = ((double) termCount) / prefixCount;
 
 		default:
@@ -121,7 +117,7 @@ public class LMSmoothingUtils {
 	 */
 	private void iterateFgLM(HashMap<String, Integer> fgPrefixCountMap,
 			HashMap<String, HashMap<String, Integer>> fgPrefix2TermCountMap,
-			HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap, SmoothingType smoothingType,
+			HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap, Configure.SmoothingType smoothingType,
 			int newTermCountInFg) {
 
 		int num = 0;
@@ -141,8 +137,7 @@ public class LMSmoothingUtils {
 				double prob = getSmoothedProb(fgPrefixCount, fgTermCount, bgProb, newTermCountInFg, smoothingType);
 				updatePrefix2TermProbMap(fgPrefix, fgTerm, prob, bgPrefix2TermProbMap);
 
-				System.out.println("find in F.LM:"
-						+ formatPrintProb(Configure.nGram, fgPrefix, fgTerm, fgPrefixCount, fgTermCount, prob)
+				System.out.println("find in F.LM:" + formatPrintProb(fgPrefix, fgTerm, fgPrefixCount, fgTermCount, prob)
 						+ " with bgProb:" + bgProb);
 				num++;
 			}
@@ -157,7 +152,7 @@ public class LMSmoothingUtils {
 	 */
 	private void iterateBgLM(HashMap<String, Integer> fgPrefixCountMap,
 			HashMap<String, HashMap<String, Integer>> fgPrefix2TermCountMap,
-			HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap, SmoothingType smoothingType,
+			HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap, Configure.SmoothingType smoothingType,
 			int newTermCountInFg) {
 		int num = 0;
 		int noPreTermNum = 0;
@@ -181,9 +176,8 @@ public class LMSmoothingUtils {
 				double prob = getSmoothedProb(fgPrefixCount, 0, bgProb, newTermCountInFg, smoothingType);
 				updatePrefix2TermProbMap(bgPrefix, bgTerm, prob, bgPrefix2TermProbMap);
 
-				System.out.println(
-						"find in B.LM:" + formatPrintProb(Configure.nGram, bgPrefix, bgTerm, fgPrefixCount, 0, prob)
-								+ " with bgProb:" + bgProb);
+				System.out.println("find in B.LM:" + formatPrintProb(bgPrefix, bgTerm, fgPrefixCount, 0, prob)
+						+ " with bgProb:" + bgProb);
 				num++;
 			}
 		}
@@ -232,16 +226,16 @@ public class LMSmoothingUtils {
 
 	public void smoothing(HashMap<String, Integer> fgPrefixCountMap,
 			HashMap<String, HashMap<String, Integer>> fgPrefix2TermCountMap,
-			HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap, SmoothingType smoothingType) {
+			HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap, Configure.SmoothingType smoothingType) {
 
 		int newTermCountInFg = 0;
-		if (smoothingType == SmoothingType.AbsoluteDiscounting) {
+		if (smoothingType == Configure.SmoothingType.ABSOLUTE_DISCOUNTING) {
 			newTermCountInFg = countNNewTermsInFg(fgPrefix2TermCountMap, bgPrefix2TermProbMap);
 		}
 
 		iterateFgLM(fgPrefixCountMap, fgPrefix2TermCountMap, bgPrefix2TermProbMap, smoothingType, newTermCountInFg);
 
-		if (smoothingType == SmoothingType.NoSmoothing)
+		if (smoothingType == Configure.SmoothingType.NO_SMOOTHING)
 			return;
 		iterateBgLM(fgPrefixCountMap, fgPrefix2TermCountMap, bgPrefix2TermProbMap, smoothingType, newTermCountInFg);
 
@@ -256,7 +250,7 @@ public class LMSmoothingUtils {
 	 * @param fgLM
 	 * @param smoothingType
 	 */
-	public void update(LanguageModel bgLM, LanguageModel fgLM, SmoothingType smoothingType) {
+	public void update(LanguageModel bgLM, LanguageModel fgLM, Configure.SmoothingType smoothingType) {
 		HashMap<String, Integer> fgPrefixCountMap = fgLM.getPrefixCountMap();
 		HashMap<String, HashMap<String, Integer>> fgPrefix2TermCountMap = fgLM.getPrefix2TermCountMap();
 		HashMap<String, HashMap<String, Double>> bgPrefix2TermProbMap = bgLM.getPrefix2TermProbMap();

@@ -1,27 +1,29 @@
 package hoang.l3s.attt.configure;
 
-import hoang.l3s.attt.model.languagemodel.LMSmoothingUtils.SmoothingType;
-
 public class Configure {
 
 	public enum Author {
-		hoang, ren, nguyen
+		HOANG, REN, NGUYEN
 	}
 
 	public enum RetentionTechnique {
-		Forget, Queue
+		FORGET, QUEUE
 	}
 
 	public enum UpdatingScheme {
-		Periodic, // update after every TIME_STEP_WIDTH
-		TweetCount // update after every NUMBER_RECENT_RELEVANT_TWEETS
+		PERIODIC, // update after every TIME_STEP_WIDTH
+		TWEET_COUNT // update after every NUMBER_RECENT_RELEVANT_TWEETS
 	}
 
-	public final static Author author = Author.nguyen;
+	public enum SmoothingType {
+		STUPID_BACKOFF, JELINEK_MERCER, BAYESIAN, ABSOLUTE_DISCOUNTING, NO_SMOOTHING
+	}
+
+	public final static Author AUTHOR = Author.HOANG;
 	public final static boolean runningOnLocal = false;
 
 	// constants for updating models
-	public final static UpdatingScheme updatingScheme = UpdatingScheme.TweetCount;
+	public final static UpdatingScheme updatingScheme = UpdatingScheme.TWEET_COUNT;
 	public static long TIME_STEP_WIDTH = 30 * 60 * 1000;// 30 mins;
 	public static int NUMBER_NEW_RELEVANT_TWEETS = 100;
 
@@ -30,11 +32,10 @@ public class Configure {
 	public static double AMPLIFY_FACTOR = 1.029;
 
 	// constants for language model
-	public static int nGram = 1;
-	public static SmoothingType smoothingType = SmoothingType.AbsoluteDiscounting;
-	public static RetentionTechnique updateType = RetentionTechnique.Forget;
-	public static String startData = "2017-01-28";
-	public static double perplexityThreshold;
+	// public static int nGram = 1;
+	public static SmoothingType SMOOTHING_TYPE = SmoothingType.ABSOLUTE_DISCOUNTING;
+	public static RetentionTechnique RETENTION_TECHNIQUE = RetentionTechnique.FORGET;
+
 	public static int QUEUE_CAPACITY = 1000;
 
 	// constants for pseudo supervised model
@@ -49,39 +50,32 @@ public class Configure {
 	public static int NUMBER_OLD_TWEET_REMOVING_WINDOW = 1;
 	public static boolean USE_NEGATIVE_TWEET_FEATURE_SELECTION = false;
 
-	public static int updatingTime = 360000; // update every hour
-
-	public static String dirPath;
-	public static String stopwordsPath;
-	public static String firstTweetsPath;
-	public static String streamPath;
-	public static String outputPath;
+	public static String WORKING_DIRECTORY;
+	public static String STOPWORD_PATH;
+	public static String FIRST_TWEET_PATH;
+	public static String STREAM_PATH;
+	public static String OUTPUT_PATH;
 
 	public Configure() {
-		if (author == Author.hoang) {
-			dirPath = "/home/hoang/attt";
+		if (AUTHOR == Author.HOANG) {
+			WORKING_DIRECTORY = "/home/hoang/attt";
 			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
-		} else if (author == Author.nguyen) {
-			dirPath = "/home/hoang/attt";
+		} else if (AUTHOR == Author.NGUYEN) {
+			WORKING_DIRECTORY = "/home/hoang/attt";
 			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		} else {
 			if (runningOnLocal) {
-				dirPath = "/Users/renlipeng/Documents/topicTracking";
+				WORKING_DIRECTORY = "/Users/renlipeng/Documents/topicTracking";
 			} else {
-				dirPath = "/home/ren";
+				WORKING_DIRECTORY = "/home/ren";
 			}
 		}
 
-		Configure.stopwordsPath = String.format("%s/data/stopwords", dirPath);
-		Configure.firstTweetsPath = String.format("%s/data/firstTweets/travel_ban.txt", dirPath);
-		Configure.streamPath = String.format("%s/data/travel_ban", dirPath);
-		Configure.outputPath = String.format("%s/output", dirPath);
+		Configure.STOPWORD_PATH = String.format("%s/data/stopwords", WORKING_DIRECTORY);
+		Configure.FIRST_TWEET_PATH = String.format("%s/data/firstTweets/travel_ban.txt", WORKING_DIRECTORY);
+		Configure.STREAM_PATH = String.format("%s/data/travel_ban", WORKING_DIRECTORY);
+		Configure.OUTPUT_PATH = String.format("%s/output", WORKING_DIRECTORY);
 
-		if (Configure.nGram == 1) {
-			Configure.perplexityThreshold = 200;
-		} else {
-			Configure.perplexityThreshold = 2;
-		}
 	}
 
 	// private static class SingletonHolder {

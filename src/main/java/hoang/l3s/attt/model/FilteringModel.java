@@ -29,7 +29,7 @@ public abstract class FilteringModel {
 	public abstract double relevantScore(Tweet tweet);
 
 	public boolean isToUpdate(Tweet tweet) {
-		if (Configure.updatingScheme == UpdatingScheme.Periodic) {
+		if (Configure.updatingScheme == UpdatingScheme.PERIODIC) {
 			long diff = tweet.getPublishedTime() - startTime;
 			int time = (int) (diff / Configure.TIME_STEP_WIDTH);
 			if (time > timeStep) {

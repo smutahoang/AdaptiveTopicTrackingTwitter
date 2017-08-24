@@ -32,7 +32,7 @@ public class TweetPreprocessingUtils {
 			String line = null;
 
 			br = new BufferedReader(
-					new FileReader(String.format("%s/common-english-adverbs.txt", Configure.stopwordsPath)));
+					new FileReader(String.format("%s/common-english-adverbs.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -43,7 +43,7 @@ public class TweetPreprocessingUtils {
 			br.close();
 
 			br = new BufferedReader(
-					new FileReader(String.format("%s/common-english-prep-conj.txt", Configure.stopwordsPath)));
+					new FileReader(String.format("%s/common-english-prep-conj.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -54,7 +54,7 @@ public class TweetPreprocessingUtils {
 			br.close();
 
 			br = new BufferedReader(
-					new FileReader(String.format("%s/common-english-words.txt", Configure.stopwordsPath)));
+					new FileReader(String.format("%s/common-english-words.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -65,7 +65,7 @@ public class TweetPreprocessingUtils {
 			br.close();
 
 			br = new BufferedReader(
-					new FileReader(String.format("%s/smart-common-words.txt", Configure.stopwordsPath)));
+					new FileReader(String.format("%s/smart-common-words.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -75,7 +75,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/mysql-stopwords.txt", Configure.stopwordsPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/mysql-stopwords.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -85,7 +85,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/twitter-slang.txt", Configure.stopwordsPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/twitter-slang.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -95,7 +95,7 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
-			br = new BufferedReader(new FileReader(String.format("%s/shorthen.txt", Configure.stopwordsPath)));
+			br = new BufferedReader(new FileReader(String.format("%s/shorthen.txt", Configure.STOPWORD_PATH)));
 			line = null;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.toLowerCase().split(",");
@@ -602,7 +602,7 @@ public class TweetPreprocessingUtils {
 
 		// nlpUtils.checkStopWordList();
 
-		String message = "RT @THEJEWISHKING: LAS VEGAS SHOW-March 30th at Eagle Hall w/ @kurttravis @Amarionette_ @weareVIS / Loveshark/The Classifieds ! $12 ea…";
+		String message = "say something i'm giving up on you";
 		System.out.printf("message = [[%s]]\n", message);
 		List<String> terms = nlpUtils.extractTermInTweet(message);
 

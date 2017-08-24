@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
-import hoang.l3s.attt.model.languagemodel.LMSmoothingUtils.SmoothingType;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class LanguageModel {
@@ -221,7 +221,7 @@ public class LanguageModel {
 	 * @param tweets
 	 * @param smoothingType
 	 */
-	public void train(List<Tweet> tweets, SmoothingType smoothingType) {
+	public void train(List<Tweet> tweets, Configure.SmoothingType smoothingType) {
 		if (nGram == 1) {
 			countUnigram(tweets);
 		} else {
@@ -263,7 +263,7 @@ public class LanguageModel {
 				}
 				double prob = termProbMap.get(term);
 
-				System.out.println(lmSmoothingUtils.formatPrintProb(this.nGram, preTerm, term, preCount, count, prob));
+				System.out.println(lmSmoothingUtils.formatPrintProb(preTerm, term, preCount, count, prob));
 
 				num++;
 				sum += prob;
@@ -300,43 +300,44 @@ public class LanguageModel {
 	}
 
 	private double getPrefixStartProb(String prefix) {
+		// Add-One smoothing
 		if (prefixStartCount.containsKey(prefix)) {
-			return ((double) prefixStartCount.get(prefix)) / totalPrefixStartCount;
-		} else {// smoothing
-			// TODO: smoothing
-			return -1;
+			return (1.0 + prefixStartCount.get(prefix)) / (totalPrefixStartCount + prefixStartCount.size());
+		} else {
+			return 1.0 / (totalPrefixStartCount + prefixStartCount.size());
 		}
 
 	}
 
 	private double getPrefixEndProb(String prefix) {
+		// Add-One smoothing
 		if (prefixEndCount.containsKey(prefix)) {
-			return ((double) prefixEndCount.get(prefix)) / totalPrefixEndCount;
-		} else {// smoothing
-			// TODO: smoothing
-			return -1;
+			return (1.0 + prefixEndCount.get(prefix)) / (prefixEndCount.size() + totalPrefixEndCount);
+		} else {
+			return 1.0 / (prefixEndCount.size() + totalPrefixEndCount);
 		}
 	}
 
 	private double getPrefix2TermProb(String prefix, String term) {
 		if (prefix2TermProbMap.containsKey(prefix)) {
+			// Add-One smoothing
 			HashMap<String, Double> termProbs = prefix2TermProbMap.get(prefix);
+			int nTerms = prefix2TermCountMap.get(prefix).size();
+			int C = prefixCountMap.get(prefix);
 			if (termProbs.containsKey(term)) {
-				return termProbs.get(term);
-			} else {// smoothing
-				// TODO: smoothing
-				return -1;
+				return (1.0 + C * termProbs.get(term)) / (nTerms + C);
+			} else {
+				return 1.0 / (nTerms + C);
 			}
-		} else {// smoothing
-			// TODO: smoothing
-			return -1;
+		} else {
+			return 1.0;
 		}
 	}
 
 	private List<Double> getProbilities(Tweet tweet, HashMap<String, HashMap<String, Double>> probMap) {
 		List<Double> probilitiesList = new ArrayList<Double>();
 		List<String> terms = tweet.getTerms(preprocessingUtils);
-		System.out.println("term size:" + terms.size());
+		// System.out.println("term size:" + terms.size());
 		String term = null;
 		String prefix = null;
 
@@ -361,10 +362,10 @@ public class LanguageModel {
 			}
 
 			term = terms.get(i + nGram - 1);
-			System.out.println(term + "|" + prefix);
+
 			double prob = getPrefix2TermProb(prefix, term);
 			probilitiesList.add(prob);
-			System.out.println("-----------pro:" + prob);
+			System.out.printf("term = %s prefix = %s prob = %f\n", term, prefix, prob);
 		}
 		if (nGram > 1) {
 			prefixBuilder.delete(0, 150);
@@ -395,23 +396,22 @@ public class LanguageModel {
 		List<Double> probList = getProbilities(tweet, prefix2TermProbMap);
 		int count = probList.size();
 		if (count == 0) {
-			return -1;
+			System.out.println("SOMETHING WRONG with getProbilities!!!");
+			System.exit(-1);
 		}
 		for (int i = 0; i < count; i++) {
 			double pro = probList.get(i);
-			if (pro > 0) {
-				sum += Math.log(pro) / Math.log(2);
-			}
-			// System.out.print("a pro:" + pro + " log:" + Math.log(pro) /
-			// Math.log(2) + "
-			// sum:" + sum + "\n");
+			sum += Math.log(pro);
 		}
 		sum = sum * (-1.0 / count);
-		// System.out.println("sum:" + sum);
-		perplexity = Math.pow(2, sum);
+
+		perplexity = Math.exp(sum);
 
 		System.out.println("perplexity:" + perplexity + " probList.size:" + probList.size());
-
+		if (Double.isInfinite(sum) || Double.isNaN(sum)) {
+			System.out.println("SOMETHING WRONG IN getPerplexity function");
+			System.exit(-1);
+		}
 		return perplexity;
 	}
 }
