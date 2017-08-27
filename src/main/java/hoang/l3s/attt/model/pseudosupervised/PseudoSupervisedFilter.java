@@ -1,12 +1,16 @@
 package hoang.l3s.attt.model.pseudosupervised;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 import java.util.Set;
 
 import hoang.l3s.attt.configure.Configure;
@@ -186,6 +190,9 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		int count = 0;
 		while ((tweet = stream.getTweet()) != null) {
 			if (count < 100000) {
+
+				if (tweet.getTerms(preprocessingUtils).size() == 0)
+					continue;
 				String result = classifier.classify(tweet);
 				if (result.equalsIgnoreCase(Configure.RELEVANT_CLASS)) {
 					firstOfTweets.add(tweet); // add tweet into the set of
@@ -196,8 +203,8 @@ public class PseudoSupervisedFilter extends FilteringModel {
 
 					// check if is the update time for update
 					long time = tweet.getPublishedTime();
-					startTime = windowTweets.get(0).getPublishedTime();
-					System.out.println("time step: " + timeStep);
+					startTime = windowTweets.get(0).getPublishedTime();			
+					
 					if (isToUpdate(tweet)) {
 						// re-training
 						System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> update");

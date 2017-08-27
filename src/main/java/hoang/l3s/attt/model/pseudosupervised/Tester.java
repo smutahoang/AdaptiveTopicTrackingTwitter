@@ -130,22 +130,22 @@ public class Tester {
 		new Configure();
 		int nGram = 1;
 
-		switch (Configure.author) {
-		case hoang:
+		switch (Configure.AUTHOR) {
+		case HOANG:
 			filter(args);
 			break;
-		case ren:
+		case REN:
 			// long startTime = System.currentTimeMillis();
 
 			try {
-				List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
+				List<Tweet> firstTweets = getFirstTweets(Configure.FIRST_TWEET_PATH);
 				LanguageModelBasedFilter filter = new LanguageModelBasedFilter(nGram);
 				filter.init(firstTweets);
 
 				String startDate = "2017-01-28";
 				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-				TweetStream stream = new TweetStream(Configure.streamPath, dateFormat.parse(startDate));
-				filter.filter(stream, Configure.outputPath);
+				TweetStream stream = new TweetStream(Configure.STREAM_PATH, dateFormat.parse(startDate));
+				filter.filter(stream, Configure.OUTPUT_PATH);
 
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
@@ -154,15 +154,15 @@ public class Tester {
 
 			break;
 
-		case nguyen:
+		case NGUYEN:
 
-			String startDate = "Fri Jan 27 00:31:10 +0000 2017";
+			String startDate = "Fri Jan 28 00:31:10 +0000 2017";
 			String windowTweetsPath = "/home/hnguyen/proj/data/firstWindow/travel_ban.txt";
 			String output = "hnt.txt";
 
 			try {
 
-				List<Tweet> firstTweets = getFirstTweets(Configure.firstTweetsPath);
+				List<Tweet> firstTweets = getFirstTweets(Configure.FIRST_TWEET_PATH);
 
 				LinkedList<Tweet> windowTweets = getTweetsInWindow(windowTweetsPath);
 
@@ -170,7 +170,7 @@ public class Tester {
 				filter.init(firstTweets, windowTweets);
 
 				SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
-				TweetStream stream = new TweetStream(Configure.streamPath, dateTimeFormatter.parse(startDate));
+				TweetStream stream = new TweetStream(Configure.STREAM_PATH, dateTimeFormatter.parse(startDate));
 				filter.filter(stream, output, firstTweets, windowTweets);
 
 			} catch (ParseException e) {

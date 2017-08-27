@@ -67,14 +67,14 @@ public class Classifier {
 			System.out.println("=================Finishing Training Model=========================");
 			// to print out attributes' weight
 
-			double[] weights = svm.sparseWeights()[0][1];
+			/*double[] weights = svm.sparseWeights()[0][1];
 			int[] indices = svm.sparseIndices()[0][1];
 			for (int i = 0; i < indices.length; i++) {
 				int j = indices[i];
 				System.out.printf("attribute[%d]: name = %s weight = %f\n", j, attributes.get(j).name(), weights[i]);
 			}
 
-			System.exit(-1);
+			System.exit(-1);*/
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -156,9 +156,6 @@ public class Classifier {
 	public Instance getSparseInstance(Tweet tweet) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 
-		// Tuan-Anh: use other constructor for constructing sparse instance
-		// SparseInstance(double weight, double[] attValues, int[] indices, int
-		// maxNumValues)
 
 		indiceSet.clear();
 		int count = 0;
@@ -191,10 +188,6 @@ public class Classifier {
 	public String classify(Tweet tweet) {
 
 		System.out.printf("\n\n[Classification] tweet = %s\n", tweet.getText().replace('\n', ' '));
-
-		if (tweet.getTerms(preprocessingUtils).size() == 0)
-			return Configure.NONRELEVANT_CLASS;
-
 		String result = "";
 		Instances test = new Instances(Configure.PROBLEM_NAME, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
