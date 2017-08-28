@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
+import hoang.l3s.attt.utils.KeyValue_Pair;
+import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
@@ -104,7 +108,44 @@ public class Classifier {
 		}
 		return instances;
 	}
+	
+	
+	//get top k terms in negative samples
+	public List<String> getTopKNegativeTerms(List<Tweet> negativeSamples, int k) {
+		HashMap<String, Integer> negativeTermMap = new HashMap<String, Integer>();
+		for(Tweet tweet: negativeSamples) {
+			List<String> terms = tweet.getTerms(preprocessingUtils);
+			for(String term: terms) {
+				if(!negativeTermMap.containsKey(term))
+					negativeTermMap.put(term, 1);
+				else {
+					int count = negativeTermMap.get(term);
+					negativeTermMap.put(term, count+1);
+				}
+			}
+			
+		}
+		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
+		for (Map.Entry<String, Integer> negativeTerms : negativeTermMap.entrySet()) {
+			String term = negativeTerms.getKey();
+			Integer negativeTerm = negativeTerms.getValue();
+			if (queue.size() < k) {
+				queue.add(new KeyValue_Pair(term, negativeTerm));
+			} else {
+				KeyValue_Pair head = queue.peek();
+				if (head.getIntKey() < negativeTerm) {
+					queue.poll();
+					queue.add(new KeyValue_Pair(term, negativeTerm));
+				}
+			}
+		}
 
+		List<String> topNegativeTerms = new ArrayList<String>();
+		while (!queue.isEmpty()) {
+			topNegativeTerms.add(queue.poll().getStrKey());
+		}
+		return topNegativeTerms;
+	}
 	// get list of features
 	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
 
@@ -122,20 +163,28 @@ public class Classifier {
 				}
 			}
 		}
-
+		int nPositiveTerms = attributeIndex;
 		if (Configure.USE_NEGATIVE_TWEET_FEATURE_SELECTION) {
-			for (Tweet tweet : negativeSamples) {
-				List<String> terms = tweet.getTerms(preprocessingUtils);
-				for (String term : terms) {
-					if (!attribute2Index.containsKey(term)) {
-						attributes.add(new Attribute(term, attributeIndex));
-						attribute2Index.put(term, attributeIndex);
-						attributeIndex++;
-					}
+//			for (Tweet tweet : negativeSamples) {
+//				List<String> terms = tweet.getTerms(preprocessingUtils);
+//				for (String term : terms) {
+//					if (!attribute2Index.containsKey(term)) {
+//						attributes.add(new Attribute(term, attributeIndex));
+//						attribute2Index.put(term, attributeIndex);
+//						attributeIndex++;
+//					}
+//				}
+//			}
+			List<String> topNegativeTerms = getTopKNegativeTerms(negativeSamples, nPositiveTerms*10);
+			for (String term : topNegativeTerms) {
+				if (!attribute2Index.containsKey(term)) {
+					attributes.add(new Attribute(term, attributeIndex));
+					attribute2Index.put(term, attributeIndex);
+					attributeIndex++;
 				}
 			}
 		}
-
+//		System.out.printf(">>>>>>>>>>>>>>>>>>>Feature Selection:\n +\tNumber of positive features %d\n+\tNumber of negative features: %d\n+number of features: %d\n", nPositiveTerms, attributeIndex + 2 - nPositiveTerms, attributeIndex);
 		attributes.add(new Attribute(Configure.MISSING_ATTRIBUTE, attributeIndex));
 		attribute2Index.put(Configure.MISSING_ATTRIBUTE, attributeIndex);
 		attributeIndex++;
@@ -187,7 +236,7 @@ public class Classifier {
 	// get class of a new instance
 	public String classify(Tweet tweet) {
 
-		System.out.printf("\n\n[Classification] tweet = %s\n", tweet.getText().replace('\n', ' '));
+		System.out.printf("\n[Classification] tweet = %s\n", tweet.getText().replace('\n', ' '));
 		String result = "";
 		Instances test = new Instances(Configure.PROBLEM_NAME, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
