@@ -10,7 +10,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.KeyValue_Pair;
-import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
@@ -71,14 +70,15 @@ public class Classifier {
 			System.out.println("=================Finishing Training Model=========================");
 			// to print out attributes' weight
 
-			/*double[] weights = svm.sparseWeights()[0][1];
-			int[] indices = svm.sparseIndices()[0][1];
-			for (int i = 0; i < indices.length; i++) {
-				int j = indices[i];
-				System.out.printf("attribute[%d]: name = %s weight = %f\n", j, attributes.get(j).name(), weights[i]);
-			}
-
-			System.exit(-1);*/
+			/*
+			 * double[] weights = svm.sparseWeights()[0][1]; int[] indices =
+			 * svm.sparseIndices()[0][1]; for (int i = 0; i < indices.length;
+			 * i++) { int j = indices[i]; System.out.printf(
+			 * "attribute[%d]: name = %s weight = %f\n", j,
+			 * attributes.get(j).name(), weights[i]); }
+			 * 
+			 * System.exit(-1);
+			 */
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -108,22 +108,21 @@ public class Classifier {
 		}
 		return instances;
 	}
-	
-	
-	//get top k terms in negative samples
+
+	// get top k terms in negative samples
 	public List<String> getTopKNegativeTerms(List<Tweet> negativeSamples, int k) {
 		HashMap<String, Integer> negativeTermMap = new HashMap<String, Integer>();
-		for(Tweet tweet: negativeSamples) {
+		for (Tweet tweet : negativeSamples) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
-			for(String term: terms) {
-				if(!negativeTermMap.containsKey(term))
+			for (String term : terms) {
+				if (!negativeTermMap.containsKey(term))
 					negativeTermMap.put(term, 1);
 				else {
 					int count = negativeTermMap.get(term);
-					negativeTermMap.put(term, count+1);
+					negativeTermMap.put(term, count + 1);
 				}
 			}
-			
+
 		}
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
 		for (Map.Entry<String, Integer> negativeTerms : negativeTermMap.entrySet()) {
@@ -133,7 +132,8 @@ public class Classifier {
 				queue.add(new KeyValue_Pair(term, negativeTerm));
 			} else {
 				KeyValue_Pair head = queue.peek();
-				if (head.getIntKey() < negativeTerm) {
+				// if (head.getIntKey() < negativeTerm) { -->Bug!!!!
+				if (head.getDoubleValue() < negativeTerm) {
 					queue.poll();
 					queue.add(new KeyValue_Pair(term, negativeTerm));
 				}
@@ -146,6 +146,7 @@ public class Classifier {
 		}
 		return topNegativeTerms;
 	}
+
 	// get list of features
 	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
 
@@ -165,17 +166,17 @@ public class Classifier {
 		}
 		int nPositiveTerms = attributeIndex;
 		if (Configure.USE_NEGATIVE_TWEET_FEATURE_SELECTION) {
-//			for (Tweet tweet : negativeSamples) {
-//				List<String> terms = tweet.getTerms(preprocessingUtils);
-//				for (String term : terms) {
-//					if (!attribute2Index.containsKey(term)) {
-//						attributes.add(new Attribute(term, attributeIndex));
-//						attribute2Index.put(term, attributeIndex);
-//						attributeIndex++;
-//					}
-//				}
-//			}
-			List<String> topNegativeTerms = getTopKNegativeTerms(negativeSamples, nPositiveTerms*10);
+			// for (Tweet tweet : negativeSamples) {
+			// List<String> terms = tweet.getTerms(preprocessingUtils);
+			// for (String term : terms) {
+			// if (!attribute2Index.containsKey(term)) {
+			// attributes.add(new Attribute(term, attributeIndex));
+			// attribute2Index.put(term, attributeIndex);
+			// attributeIndex++;
+			// }
+			// }
+			// }
+			List<String> topNegativeTerms = getTopKNegativeTerms(negativeSamples, nPositiveTerms * 10);
 			for (String term : topNegativeTerms) {
 				if (!attribute2Index.containsKey(term)) {
 					attributes.add(new Attribute(term, attributeIndex));
@@ -184,7 +185,10 @@ public class Classifier {
 				}
 			}
 		}
-//		System.out.printf(">>>>>>>>>>>>>>>>>>>Feature Selection:\n +\tNumber of positive features %d\n+\tNumber of negative features: %d\n+number of features: %d\n", nPositiveTerms, attributeIndex + 2 - nPositiveTerms, attributeIndex);
+		// System.out.printf(">>>>>>>>>>>>>>>>>>>Feature Selection:\n +\tNumber
+		// of positive features %d\n+\tNumber of negative features: %d\n+number
+		// of features: %d\n", nPositiveTerms, attributeIndex + 2 -
+		// nPositiveTerms, attributeIndex);
 		attributes.add(new Attribute(Configure.MISSING_ATTRIBUTE, attributeIndex));
 		attribute2Index.put(Configure.MISSING_ATTRIBUTE, attributeIndex);
 		attributeIndex++;
@@ -193,7 +197,6 @@ public class Classifier {
 
 		classAtt.add(Configure.NONRELEVANT_CLASS);
 		classAtt.add(Configure.RELEVANT_CLASS);
-		
 
 		attributes.add(new Attribute(Configure.CLASS_ATTRIBUTE, classAtt, attributeIndex));
 
@@ -204,7 +207,6 @@ public class Classifier {
 
 	public Instance getSparseInstance(Tweet tweet) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
-
 
 		indiceSet.clear();
 		int count = 0;
