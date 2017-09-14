@@ -22,7 +22,6 @@ import hoang.l3s.attt.model.pseudosupervised.PseudoSupervisedFilter;
 
 public class Tester {
 	private static String dateFormat = "EEE MMM dd HH:mm:ss +0000 yyyy";
-	// test github
 	static List<Tweet> getFirstTweets(String file) {
 		try {
 			String dateformat = "EEE MMM dd HH:mm:ss +0000 yyyy";
