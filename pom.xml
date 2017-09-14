@@ -70,6 +70,7 @@
 					<target>1.7</target>
 					<archive>
 						<manifest>
+							<!-- <mainClass>hoang.l3s.attt.model.pseudosupervised.Tester</mainClass> -->
 							<mainClass>hoang.l3s.attt.runner.Runner</mainClass>
 						</manifest>
 					</archive>

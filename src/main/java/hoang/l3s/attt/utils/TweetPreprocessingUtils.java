@@ -21,12 +21,10 @@ public class TweetPreprocessingUtils {
 	// static String stopwordPath = "/home/hoang/attt/data/stopwords";
 	// static String stopwordPath =
 	// "E:/code/java/AdaptiveTopicTrackingTwitter/data/stopwords";
-	static HashSet<String> stopWords;
+	private HashSet<String> stopWords;
 
-	static void getStopWords() {
+	private void getStopWords() {
 		try {
-			new Configure();
-
 			stopWords = new HashSet<String>();
 			BufferedReader br;
 			String line = null;
@@ -105,10 +103,22 @@ public class TweetPreprocessingUtils {
 			}
 			br.close();
 
+			addMoreStopWords();
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
 		}
+	}
+
+	/***
+	 * more stop-words found while conducting experiments
+	 */
+	private void addMoreStopWords() {
+		// words due to truncated tweets
+		stopWords.add("//t");
+		stopWords.add("http");
+		stopWords.add("https");
 	}
 
 	private UrlValidator urlValidator;
@@ -591,6 +601,7 @@ public class TweetPreprocessingUtils {
 	}
 
 	public static void main(String[] args) {
+		new Configure();
 		// String text = "trump’s";
 		// char a = '\u2019';
 		// System.out.println("code = " + a);
@@ -602,7 +613,7 @@ public class TweetPreprocessingUtils {
 
 		// nlpUtils.checkStopWordList();
 
-		String message = "say something i'm giving up on you";
+		String message = "WITNESS ACTION REQUIRED - 1 Million BTS Lockup to be a Witness https://t.co/BYaUPoe5sZ";
 		System.out.printf("message = [[%s]]\n", message);
 		List<String> terms = nlpUtils.extractTermInTweet(message);
 

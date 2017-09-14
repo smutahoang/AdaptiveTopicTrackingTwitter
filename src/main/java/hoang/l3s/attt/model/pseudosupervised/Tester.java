@@ -57,7 +57,7 @@ public class Tester {
 		}
 		return null;
 	}
-	
+
 	static LinkedList<Tweet> getTweetsInWindow(String file) {
 		try {
 			String dateformat = "EEE MMM dd HH:mm:ss +0000 yyyy";
@@ -93,38 +93,6 @@ public class Tester {
 		return null;
 	}
 
-	static void filter(String[] args) {
-		try {
-			// String model = args[1];
-			// String firstTweetPath = args[2];
-			// String streamPath = args[3];
-			// String startDate = args[4];
-			// String outputPath = args[5];
-
-			FilteringModel filteringModel = null;
-
-			// test
-			String model = "graph";
-			String firstTweetPath = "/home/hoang/attt/data/firstTweets/travel_ban.txt";
-			String streamPath = "/home/hoang/attt/data/travel_ban";
-			String startDate = "2017-01-28";
-			String outputPath = "/home/hoang/attt/output";
-
-			List<Tweet> firstTweets = getFirstTweets(firstTweetPath);
-
-			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-			TweetStream stream = new TweetStream(streamPath, dateFormat.parse(startDate));
-
-			// filteringModel = new GraphBasedFilter();
-
-			filteringModel.init(firstTweets);
-			filteringModel.filter(stream, outputPath);
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
 	public static void main(String[] args) {
 
 		new Configure();
@@ -132,7 +100,6 @@ public class Tester {
 
 		switch (Configure.AUTHOR) {
 		case HOANG:
-			filter(args);
 			break;
 		case REN:
 			// long startTime = System.currentTimeMillis();
@@ -166,12 +133,13 @@ public class Tester {
 
 				LinkedList<Tweet> windowTweets = getTweetsInWindow(windowTweetsPath);
 
-				PseudoSupervisedFilter filter = new PseudoSupervisedFilter();
-				filter.init(firstTweets, windowTweets);
+				FilteringModel filter = new PseudoSupervisedFilter(windowTweets);
+
+				filter.init(firstTweets);
 
 				SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
 				TweetStream stream = new TweetStream(Configure.STREAM_PATH, dateTimeFormatter.parse(startDate));
-				filter.filter(stream, output, firstTweets, windowTweets);
+				filter.filter(stream, output);
 
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block

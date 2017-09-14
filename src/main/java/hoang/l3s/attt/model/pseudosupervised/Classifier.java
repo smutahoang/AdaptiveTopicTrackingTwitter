@@ -70,15 +70,16 @@ public class Classifier {
 			System.out.println("=================Finishing Training Model=========================");
 			// to print out attributes' weight
 
-			/*
-			 * double[] weights = svm.sparseWeights()[0][1]; int[] indices =
-			 * svm.sparseIndices()[0][1]; for (int i = 0; i < indices.length;
-			 * i++) { int j = indices[i]; System.out.printf(
-			 * "attribute[%d]: name = %s weight = %f\n", j,
-			 * attributes.get(j).name(), weights[i]); }
-			 * 
-			 * System.exit(-1);
-			 */
+			double[] weights = svm.sparseWeights()[0][1];
+			int[] indices = svm.sparseIndices()[0][1];
+			for (int i = 0; i < indices.length; i++) {
+				int j = indices[i];
+				System.out.printf("attribute[%d]: name = [[%s]] \t\t weight = %f\n", j, attributes.get(j).name(),
+						weights[i]);
+			}
+
+			//System.exit(-1);
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -259,6 +260,7 @@ public class Classifier {
 			e.printStackTrace();
 			System.exit(-1);// this means v is not 0 or 1
 		}
+		System.out.printf("result = [[%s]]\n", result);
 		return result;
 	}
 

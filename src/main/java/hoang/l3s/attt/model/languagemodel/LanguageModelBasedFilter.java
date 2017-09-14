@@ -26,13 +26,12 @@ public class LanguageModelBasedFilter extends FilteringModel {
 		nGram = _nGram;
 	}
 
-	public void init(List<Tweet> tweets) {
+	public void init(List<Tweet> recentRelevantTweets) {
 		preprocessingUtils = new TweetPreprocessingUtils();
 		lmSmoothingUtils = new LMSmoothingUtils();
-		// bgProbMap = new HashMap<String, HashMap<String, Double>>();
 		bgLanguageModel = new LanguageModel(nGram, preprocessingUtils, lmSmoothingUtils);
-		buffer = new ArrayList<Tweet>();
-		bgLanguageModel.train(tweets, Configure.SmoothingType.NO_SMOOTHING);
+		buffer = recentRelevantTweets;
+		bgLanguageModel.train(buffer, Configure.SmoothingType.NO_SMOOTHING);
 
 		String filename = String.format("%s/language_model/model_%d.csv", Configure.OUTPUT_PATH,
 				bgLanguageModel.getNUpdates());
@@ -105,7 +104,9 @@ public class LanguageModelBasedFilter extends FilteringModel {
 	}
 
 	public void filter(TweetStream stream, String outputPath) {
-		// TODO Auto-generated method stub
+		System.out.println("determining start time");
+		super.setStartTime(stream, buffer.get(buffer.size() - 1));
+		System.out.println("done!");
 
 		File file = new File(outputPath);
 		if (file.exists()) {
@@ -120,7 +121,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 			double s = relevantScore(tweet);
 			if (s <= threshold) {
 				outputTweet(tweet, filteredTweetFile);
-				// update(tweet);
+				update(tweet);
 			}
 			outputCandidateTweet(tweet, s, candidateTweetFile);
 		}

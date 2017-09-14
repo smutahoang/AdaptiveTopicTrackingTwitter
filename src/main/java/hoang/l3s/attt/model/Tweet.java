@@ -8,18 +8,22 @@ public class Tweet {
 
 	private String tweetId;
 	private String text;
-	private String user;
-	private long created_At;
+	private String userId;
+	private long createdAt;
+
+	// for experimenting with crisis tweets
+	private String alignedTweet;
+	private boolean isRelevant;
 
 	private boolean verbose = false;
 
 	private List<String> terms;
 
-	public Tweet(String _tweetId, String _text, String _user, long _publishedTime) {
+	public Tweet(String _tweetId, String _text, String _userId, long _publishedTime) {
 		tweetId = _tweetId;
 		text = _text;
-		user = _user;
-		created_At = _publishedTime;
+		userId = _userId;
+		createdAt = _publishedTime;
 		terms = null;
 	}
 
@@ -32,11 +36,15 @@ public class Tweet {
 	}
 
 	public String getUser() {
-		return user;
+		return userId;
 	}
 
 	public long getPublishedTime() {
-		return created_At;
+		return createdAt;
+	}
+
+	public void setPublishedTime(long _createdAt) {
+		createdAt = _createdAt;
 	}
 
 	public List<String> getTerms(TweetPreprocessingUtils preprocessingUtils) {
@@ -52,5 +60,21 @@ public class Tweet {
 			}
 		}
 		return terms;
+	}
+
+	public void setAlignedTweet(String _tweetId) {
+		alignedTweet = _tweetId;
+	}
+
+	public String getAlignedTweet() {
+		return alignedTweet;
+	}
+
+	public void setIsRelevant(boolean _isRelevant) {
+		isRelevant = _isRelevant;
+	}
+
+	public boolean getIsRelevant() {
+		return isRelevant;
 	}
 }

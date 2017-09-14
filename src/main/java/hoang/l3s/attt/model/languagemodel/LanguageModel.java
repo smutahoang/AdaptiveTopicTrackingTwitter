@@ -110,7 +110,7 @@ public class LanguageModel {
 		String prefix = null;
 		int nTerms = terms.size() - (nGram - 1);
 		for (int j = 0; j < nTerms; j++) {
-			prefixBuilder.delete(0, 150);
+			prefixBuilder.delete(0, Configure.TWEET_MAX_NUMBER_CHARACTER);
 			// int k = 0;
 			for (int k = 0; k < nGram - 1; k++) {
 				// preTerm.append(terms.get(j + k) + " ");
@@ -153,7 +153,7 @@ public class LanguageModel {
 			}
 		}
 
-		prefixBuilder.delete(0, 150);
+		prefixBuilder.delete(0, Configure.TWEET_MAX_NUMBER_CHARACTER);
 		nTerms = terms.size();
 		// int k = 0;
 		for (int k = Math.max(0, terms.size() - (nGram - 1)); k < nTerms; k++) {
@@ -306,7 +306,6 @@ public class LanguageModel {
 		} else {
 			return 1.0 / (totalPrefixStartCount + prefixStartCount.size());
 		}
-
 	}
 
 	private double getPrefixEndProb(String prefix) {

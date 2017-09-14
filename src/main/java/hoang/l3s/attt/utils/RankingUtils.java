@@ -80,13 +80,14 @@ public class RankingUtils {
 
 	public static void main(String[] args) {
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
-		queue.add(new KeyValue_Pair(1, 0.1));
-		queue.add(new KeyValue_Pair(4, 0.4));
-		queue.add(new KeyValue_Pair(2, 0.2));
-		queue.add(new KeyValue_Pair(3, 0.3));
-		queue.add(new KeyValue_Pair(7, 0.7));
-		queue.add(new KeyValue_Pair(6, 0.6));
-		queue.add(new KeyValue_Pair(5, 0.5));
+		queue.add(new KeyValue_Pair(3, 3));
+		queue.add(new KeyValue_Pair(7, 7));
+		queue.add(new KeyValue_Pair(6, 6));
+		queue.add(new KeyValue_Pair(5, 5));
+		queue.add(new KeyValue_Pair(1, 1));
+		queue.add(new KeyValue_Pair(4, 4));
+		queue.add(new KeyValue_Pair(2, 2));
+		
 
 		while (!queue.isEmpty()) {
 			KeyValue_Pair pair = queue.poll();

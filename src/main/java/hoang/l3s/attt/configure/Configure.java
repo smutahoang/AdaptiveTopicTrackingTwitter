@@ -2,6 +2,8 @@ package hoang.l3s.attt.configure;
 
 public class Configure {
 
+	public final static int TWEET_MAX_NUMBER_CHARACTER = 150;
+
 	public enum Author {
 		HOANG, REN, NGUYEN
 	}
@@ -23,27 +25,32 @@ public class Configure {
 	public final static boolean runningOnLocal = false;
 
 	// constants for updating models
-	public final static UpdatingScheme updatingScheme = UpdatingScheme.TWEET_COUNT;
-	public static long TIME_STEP_WIDTH = 30 * 60 * 1000;// 30 mins;
-	public static int NUMBER_NEW_RELEVANT_TWEETS = 100;
+	public final static UpdatingScheme updatingScheme = UpdatingScheme.PERIODIC;
+	public final static long TIME_STEP_WIDTH = 30 * 60 * 1000;// 30 mins;
+	public final static int NUMBER_NEW_RELEVANT_TWEETS = 100;
 
 	// constants for graph based model
-	public static int TEMPORAL_WINDOW = 3;
-	public static double AMPLIFY_FACTOR = 1.029;
+	public final static int TEMPORAL_WINDOW = 12;
+	// public final static double AMPLIFY_FACTOR = 1.029;// decay by a half per
+	// timestep
+	public final static double AMPLIFY_FACTOR = 1.0;// not decay
+	public final static double BACKGROUND_TWEET_SAMPLING_RATIO = 0.05;
+	public final static double PROPORTION_OF_KEYTERMS = 0.01;
+	public final static double MAX_DEVIATION_FROM_MEAN_RELEVANT_SCORE = 6;
 
 	// constants for language model
 	// public static int nGram = 1;
-	public static SmoothingType SMOOTHING_TYPE = SmoothingType.ABSOLUTE_DISCOUNTING;
-	public static RetentionTechnique RETENTION_TECHNIQUE = RetentionTechnique.FORGET;
+	public final static SmoothingType SMOOTHING_TYPE = SmoothingType.ABSOLUTE_DISCOUNTING;
+	public final static RetentionTechnique RETENTION_TECHNIQUE = RetentionTechnique.FORGET;
 
-	public static int QUEUE_CAPACITY = 1000;
+	public final static int QUEUE_CAPACITY = 1000;
 
 	// constants for pseudo supervised model
 	public static String RELEVANT_CLASS = "RELEVANT";
 	public static String NONRELEVANT_CLASS = "NONRELEVANT";
 	public static int NUMBER_EXCLUSION_TERMS = 200;
-	public static int NONRELEVANT_TWEET_SAMPLING_RATIO = 20;
-	public static int OLD_RELEVANT_TWEET_REMOVING_RATIO = 10;
+	public static int NONRELEVANT_TWEET_SAMPLING_RATIO = 10;
+	public static double OLD_RELEVANT_TWEET_REMOVING_RATIO = 0.05;
 	public static String MISSING_ATTRIBUTE = "[[MISS_ATTRIBUTE]]";
 	public static String CLASS_ATTRIBUTE = "[[CLASS_ATTRIBUTE]]";
 	public static String PROBLEM_NAME = "TWEET_CLASSIFICATION";
@@ -58,11 +65,11 @@ public class Configure {
 
 	public Configure() {
 		if (AUTHOR == Author.HOANG) {
-			WORKING_DIRECTORY = "/home/hoang/attt";
-			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+			// WORKING_DIRECTORY = "/home/hoang/attt";
+			WORKING_DIRECTORY = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		} else if (AUTHOR == Author.NGUYEN) {
 			WORKING_DIRECTORY = "/home/hoang/attt";
-			// dirPath = "E:/code/java/AdaptiveTopicTrackingTwitter";
+			// WORKING_DIRECTORY = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		} else {
 			if (runningOnLocal) {
 				WORKING_DIRECTORY = "/Users/renlipeng/Documents/topicTracking";
