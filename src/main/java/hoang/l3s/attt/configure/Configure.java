@@ -34,9 +34,11 @@ public class Configure {
 	// public final static double AMPLIFY_FACTOR = 1.029;// decay by a half per
 	// timestep
 	public final static double AMPLIFY_FACTOR = 1.0;// not decay
-	public final static double BACKGROUND_TWEET_SAMPLING_RATIO = 0.05;
+	public final static double BACKGROUND_TWEET_SAMPLING_RATIO = 0.2;
 	public final static double PROPORTION_OF_KEYTERMS = 0.01;
 	public final static double MAX_DEVIATION_FROM_MEAN_RELEVANT_SCORE = 6;
+	public final static int MAX_NUMBER_KEY_TERMS = 10;
+	public final static int MIN_NUMBER_KEY_TERMS = 2;
 
 	// constants for language model
 	// public static int nGram = 1;
@@ -65,8 +67,8 @@ public class Configure {
 
 	public Configure() {
 		if (AUTHOR == Author.HOANG) {
-			// WORKING_DIRECTORY = "/home/hoang/attt";
-			WORKING_DIRECTORY = "E:/code/java/AdaptiveTopicTrackingTwitter";
+			WORKING_DIRECTORY = "/home/hoang/attt";
+			// WORKING_DIRECTORY = "E:/code/java/AdaptiveTopicTrackingTwitter";
 		} else if (AUTHOR == Author.NGUYEN) {
 			WORKING_DIRECTORY = "/home/hoang/attt";
 			// WORKING_DIRECTORY = "E:/code/java/AdaptiveTopicTrackingTwitter";

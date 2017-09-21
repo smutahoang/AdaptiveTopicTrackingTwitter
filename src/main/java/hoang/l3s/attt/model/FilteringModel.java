@@ -2,6 +2,7 @@ package hoang.l3s.attt.model;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -10,11 +11,16 @@ import hoang.l3s.attt.configure.Configure.UpdatingScheme;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public abstract class FilteringModel {
+	protected List<Tweet> recentRelevantTweets;
+	protected LinkedList<Tweet> recentTweets;
 	protected int nRelevantTweets;
 	protected int timeStep;
 	protected long startTime;
 	protected TweetPreprocessingUtils preprocessingUtils;
 	protected Random rand;
+
+	protected String outputPath;
+	protected String dataset;
 
 	/***
 	 * initialize the filtering model from a set of first tweets
@@ -90,6 +96,6 @@ public abstract class FilteringModel {
 	 * 
 	 * @param stream
 	 */
-	public abstract void filter(TweetStream stream, String outputPath);
+	public abstract void filter(TweetStream stream, String outputPath, String dataset);
 
 }

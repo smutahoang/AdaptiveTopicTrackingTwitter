@@ -57,16 +57,37 @@ public class RankingUtils {
 		return topTfIdfTerms;
 	}
 
-	public static List<Integer> getTopElements(int k, double[] wordDistributions) {
+	public static List<Integer> getIndexTopElements(int k, double[] array) {
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
-		for (int i = 0; i < wordDistributions.length; i++) {
+		for (int i = 0; i < array.length; i++) {
 			if (queue.size() < k) {
-				queue.add(new KeyValue_Pair(i, wordDistributions[i]));
+				queue.add(new KeyValue_Pair(i, array[i]));
 			} else {
 				KeyValue_Pair head = queue.peek();
-				if (head.getDoubleValue() < wordDistributions[i]) {
+				if (head.getDoubleValue() < array[i]) {
 					queue.poll();
-					queue.add(new KeyValue_Pair(i, wordDistributions[i]));
+					queue.add(new KeyValue_Pair(i, array[i]));
+				}
+			}
+		}
+
+		List<Integer> topWords = new ArrayList<Integer>();
+		while (!queue.isEmpty()) {
+			topWords.add(topWords.size(), queue.poll().getIntKey());
+		}
+		return topWords;
+	}
+
+	public static List<Integer> getIndexTopElements(int k, List<Double> array) {
+		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
+		for (int i = 0; i < array.size(); i++) {
+			if (queue.size() < k) {
+				queue.add(new KeyValue_Pair(i, array.get(i)));
+			} else {
+				KeyValue_Pair head = queue.peek();
+				if (head.getDoubleValue() < array.get(i)) {
+					queue.poll();
+					queue.add(new KeyValue_Pair(i, array.get(i)));
 				}
 			}
 		}
@@ -87,7 +108,6 @@ public class RankingUtils {
 		queue.add(new KeyValue_Pair(1, 1));
 		queue.add(new KeyValue_Pair(4, 4));
 		queue.add(new KeyValue_Pair(2, 2));
-		
 
 		while (!queue.isEmpty()) {
 			KeyValue_Pair pair = queue.poll();

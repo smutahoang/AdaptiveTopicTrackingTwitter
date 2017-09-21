@@ -103,7 +103,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 		}
 	}
 
-	public void filter(TweetStream stream, String outputPath) {
+	public void filter(TweetStream stream, String outputPath, String dataset) {
 		System.out.println("determining start time");
 		super.setStartTime(stream, buffer.get(buffer.size() - 1));
 		System.out.println("done!");

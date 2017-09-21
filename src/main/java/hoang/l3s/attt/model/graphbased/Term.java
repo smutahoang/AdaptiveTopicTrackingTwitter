@@ -9,8 +9,12 @@ public class Term {
 	private boolean newFlag;
 	private HashMap<Integer, AdjacentTerm> outTerms;
 	private HashMap<Integer, AdjacentTerm> inTerms;
+	private HashMap<Integer, AdjacentTerm> adjTerms;// undirected
+
 	private double sumOutWeight;
 	private double sumInWeight;
+	private double sumAdjWeight;// undirected
+
 	private double rank;
 
 	public Term(int _lastUpdate) {
@@ -20,8 +24,10 @@ public class Term {
 		newFlag = true;
 		outTerms = new HashMap<Integer, AdjacentTerm>();
 		inTerms = new HashMap<Integer, AdjacentTerm>();
+		adjTerms = new HashMap<Integer, AdjacentTerm>();
 		sumOutWeight = 0;
 		sumInWeight = 0;
+		sumAdjWeight = 0;
 		rank = -1;
 	}
 
@@ -118,6 +124,40 @@ public class Term {
 			return 0;
 		} else {
 			return adjacentTerm.getWeight();
+		}
+	}
+
+	// undirected
+
+	public HashMap<Integer, AdjacentTerm> getAdjTerms() {
+		return adjTerms;
+	}
+
+	public double getSumAdjWeight() {
+		return sumAdjWeight;
+	}
+
+	public void addAdjTerm(int term, double w) {
+		AdjacentTerm adjTerm = adjTerms.get(term);
+		if (adjTerm == null) {
+			adjTerms.put(term, new AdjacentTerm(w, -1));
+		} else {
+			adjTerm.addWeight(w);
+		}
+		sumAdjWeight += w;
+	}
+
+	public void removeAdjTerm(int term) {
+		double w = adjTerms.remove(term).getWeight();
+		sumAdjWeight -= w;
+	}
+
+	public double getAdjTermWeight(int j) {
+		AdjacentTerm adjTerm = adjTerms.get(j);
+		if (adjTerm == null) {
+			return 0;
+		} else {
+			return adjTerm.getWeight();
 		}
 	}
 

@@ -806,7 +806,7 @@ public class TwitterLDA {
 			List<Integer> topWords = null;
 			for (int z = 0; z < nTopics; z++) {
 				bw.write(String.format("***[[TOPIC-%d]]***\n", z));
-				topWords = RankingUtils.getTopElements(k, tweetTopics[z]);
+				topWords = RankingUtils.getIndexTopElements(k, tweetTopics[z]);
 				for (int j = topWords.size() - 1; j >= 0; j--) {
 					int w = topWords.get(j);
 					bw.write(String.format("%s,%f\n", tweetVocabulary[w], tweetTopics[z][w]));
@@ -814,7 +814,7 @@ public class TwitterLDA {
 			}
 
 			bw.write("***[[BACKGROUND-TOPIC]]***\n");
-			topWords = RankingUtils.getTopElements(k * 2, backgroundTopic);
+			topWords = RankingUtils.getIndexTopElements(k * 2, backgroundTopic);
 			for (int j = topWords.size() - 1; j >= 0; j--) {
 				int w = topWords.get(j);
 				bw.write(String.format("%s,%f\n", tweetVocabulary[w], backgroundTopic[w]));
@@ -921,7 +921,7 @@ public class TwitterLDA {
 			for (int z = 0; z < nTopics; z++) {
 				topTweetIds = new HashSet<String>();
 				bw.write(String.format("***[[TOPIC-%d]]***\n", z));
-				topTweets = RankingUtils.getTopElements(k, perTweetPerplexity[z]);
+				topTweets = RankingUtils.getIndexTopElements(k, perTweetPerplexity[z]);
 				for (int j = topTweets.size() - 1; j >= 0; j--) {
 					int t = topTweets.get(j);
 					bw.write(String.format("%s,%f,%s\n", tweetID[z][t], perTweetPerplexity[z][t],
@@ -933,7 +933,7 @@ public class TwitterLDA {
 				topicTopTweets.put(z, topTweetIds);
 			}
 			bw.write("***[[BACKGROUND-TOPIC]]***\n");
-			topTweets = RankingUtils.getTopElements(k, backgroundTweetPerplexity);
+			topTweets = RankingUtils.getIndexTopElements(k, backgroundTweetPerplexity);
 			for (int j = topTweets.size() - 1; j >= 0; j--) {
 				int t = topTweets.get(j);
 				bw.write(String.format("%s,%f,%s\n", backgroundTweetID[t], backgroundTweetPerplexity[t],
@@ -997,7 +997,7 @@ public class TwitterLDA {
 			for (int z = 0; z < nTopics; z++) {
 				HashSet<String> topTweetIds = topicTopTweets.get(z);
 				bw.write(String.format("***[[TOPIC-%d]]***\n", z));
-				topTweets = RankingUtils.getTopElements(k, perTweetEntropy[z]);
+				topTweets = RankingUtils.getIndexTopElements(k, perTweetEntropy[z]);
 				for (int j = topTweets.size() - 1; j >= 0; j--) {
 					int t = topTweets.get(j);
 					bw.write(String.format("%s,%f,%s\n", tweetID[z][t], perTweetEntropy[z][t],
@@ -1064,7 +1064,7 @@ public class TwitterLDA {
 			for (int z = 0; z < nTopics; z++) {
 				HashSet<String> topTweetIds = topicTopTweets.get(z);
 				bw.write(String.format("***[[TOPIC-%d]]***\n", z));
-				topTweets = RankingUtils.getTopElements(k, perTweetEntropy[z]);
+				topTweets = RankingUtils.getIndexTopElements(k, perTweetEntropy[z]);
 				for (int j = topTweets.size() - 1; j >= 0; j--) {
 					int t = topTweets.get(j);
 					bw.write(String.format("%s,%f,%s\n", tweetID[z][t], perTweetEntropy[z][t],

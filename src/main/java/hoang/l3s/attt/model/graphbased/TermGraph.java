@@ -38,6 +38,8 @@ public class TermGraph {
 	private boolean simpleTermRank = true;
 	private boolean keytermFlag = true;
 
+	private int maxNKeyTerms;
+
 	// utility variables
 	private HashSet<Integer> termIndexSubSet;
 
@@ -141,6 +143,7 @@ public class TermGraph {
 			System.out.printf("index = %d, term = %s\n", desTerm, strTerms[desTerm]);
 		}
 		term.addInTerm(srcTerm, weight);
+
 	}
 
 	/***
@@ -321,8 +324,19 @@ public class TermGraph {
 
 	}
 
+	public void setMaxNKeyTerms(int _maxNKeyTerms) {
+		maxNKeyTerms = _maxNKeyTerms;
+	}
+
 	private void getKeyTermsByRank() {
 		int k = (int) (Configure.PROPORTION_OF_KEYTERMS * nActiveTerms);
+		if (k > maxNKeyTerms) {
+			k = maxNKeyTerms;
+		}
+		if (k < Configure.MIN_NUMBER_KEY_TERMS) {
+			k = Configure.MIN_NUMBER_KEY_TERMS;
+		}
+
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
 		int nTerms = adjList.size();
 		for (int i = 0; i < nTerms; i++) {
@@ -330,13 +344,15 @@ public class TermGraph {
 			if (term == null) {
 				continue;
 			}
+			double s = term.getRank();
+			s *= Math.log(1 + ((double) term.getNRelevantTweets()) / term.getNAllTweets());
 			if (queue.size() < k) {
-				queue.add(new KeyValue_Pair(i, term.getRank()));
+				queue.add(new KeyValue_Pair(i, s));
 			} else {
 				KeyValue_Pair head = queue.peek();
-				if (head.getDoubleValue() < term.getRank()) {
+				if (head.getDoubleValue() < s) {
 					queue.poll();
-					queue.add(new KeyValue_Pair(i, term.getRank()));
+					queue.add(new KeyValue_Pair(i, s));
 				}
 			}
 		}
@@ -371,11 +387,20 @@ public class TermGraph {
 					continue;
 				}
 				double rank = term.getRank();
+				double sum = term.getSumOutWeight() + term.getSumInWeight();
+
 				for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getOutTerms().entrySet()) {
 					int j = adjTermIter.getKey();
 					AdjacentTerm adjTerm = adjTermIter.getValue();
-					tempRank[j] += (1 - DAMPING_FACTOR) * rank * adjTerm.getWeight() / term.getSumOutWeight();
+					tempRank[j] += (1 - DAMPING_FACTOR) * rank * adjTerm.getWeight() / sum;
 				}
+
+				for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getInTerms().entrySet()) {
+					int j = adjTermIter.getKey();
+					AdjacentTerm adjTerm = adjTermIter.getValue();
+					tempRank[j] += (1 - DAMPING_FACTOR) * rank * adjTerm.getWeight() / sum;
+				}
+
 			}
 
 			for (int i = 0; i < nTerms; i++) {

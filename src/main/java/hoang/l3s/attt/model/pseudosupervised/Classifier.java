@@ -1,5 +1,7 @@
 package hoang.l3s.attt.model.pseudosupervised;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,17 +70,7 @@ public class Classifier {
 		try {
 			svm.buildClassifier(dataSet);
 			System.out.println("=================Finishing Training Model=========================");
-			// to print out attributes' weight
-
-			double[] weights = svm.sparseWeights()[0][1];
-			int[] indices = svm.sparseIndices()[0][1];
-			for (int i = 0; i < indices.length; i++) {
-				int j = indices[i];
-				System.out.printf("attribute[%d]: name = [[%s]] \t\t weight = %f\n", j, attributes.get(j).name(),
-						weights[i]);
-			}
-
-			//System.exit(-1);
+			// System.exit(-1);
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -266,5 +258,21 @@ public class Classifier {
 
 	public boolean predict(Tweet tweet) {
 		return false;
+	}
+
+	public void saveClassifier(String filename) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+			double[] weights = svm.sparseWeights()[0][1];
+			int[] indices = svm.sparseIndices()[0][1];
+			for (int i = 0; i < indices.length; i++) {
+				int j = indices[i];
+				bw.write(String.format("%d,%f,[[%s]]\n", j, weights[i], attributes.get(j).name()));
+			}
+			bw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
 	}
 }

@@ -23,9 +23,9 @@ public class PseudoFeedbackBasedFilter extends FilteringModel {
 
 	}
 
-	public void filter(TweetStream stream, String ouputPath) {
+	public void filter(TweetStream stream, String ouputPath, String dataset) {
 		// TODO Auto-generated method stub
-		
-	}	
+
+	}
 
 }

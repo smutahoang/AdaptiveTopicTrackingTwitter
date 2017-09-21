@@ -18,12 +18,9 @@ import hoang.l3s.attt.model.TweetStream;
 import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
-public class PseudoSupervisedFilter extends FilteringModel {
-	private List<Tweet> recentRelevantTweets;
-	private LinkedList<Tweet> recentTweets;
+public class PseudoSupervisedFilter extends FilteringModel {	
 	private Classifier classifier;
 	private HashSet<String> keywords;
-	
 
 	public PseudoSupervisedFilter(LinkedList<Tweet> _recentTweets) {
 		recentTweets = _recentTweets;
@@ -36,6 +33,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		recentRelevantTweets = _recentRelevantTweets;
 		// train the first classifier
 		trainClassifier();
+		// classifier.saveClassifier("/home/hoang/attt/output/pseudo_supervised/classifier_init.csv");
 	}
 
 	/***
@@ -160,6 +158,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		getKeyWords();
 		List<Tweet> nonRelevantTweets = sampleNonRelevantTweets();
 		classifier = new Classifier(recentRelevantTweets, nonRelevantTweets, preprocessingUtils);
+		classifier.saveClassifier(String.format("%s/%s_classifier_%d.csv", outputPath, dataset, timeStep));
 	}
 
 	/***
@@ -175,15 +174,19 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		}
 	}
 
-	public void filter(TweetStream stream, String outputPath) {
+	public void filter(TweetStream stream, String _outputPath, String _dataset) {
 		// determine startTime
 		System.out.println("determining startTime");
 		super.setStartTime(stream, recentRelevantTweets.get(recentRelevantTweets.size() - 1));
 		System.out.println("done!");
 
+		outputPath = _outputPath;
+		dataset = _dataset;
+
+		String output_filename = String.format("%s/%s_psFilteredTweets.txt", outputPath, dataset);
+
 		// start filtering
-		String filteredTweetFile = String.format("%s/pseudo_supervised/psFilteredTweets.txt", outputPath);
-		File file = new File(filteredTweetFile);
+		File file = new File(output_filename);
 		if (file.exists()) {
 			file.delete();
 		}
@@ -196,7 +199,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			String result = classifier.classify(tweet);
 			if (result.equals(Configure.RELEVANT_CLASS)) {
 				recentRelevantTweets.add(tweet);
-				outputTweet(tweet, filteredTweetFile);
+				outputTweet(tweet, output_filename);
 				nRelevantTweets++;
 				if (Configure.updatingScheme == UpdatingScheme.TWEET_COUNT) {
 					// check if is the update time for update

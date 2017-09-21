@@ -13,12 +13,11 @@ import hoang.l3s.attt.model.TweetStream;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
 public class GraphBasedFilter extends FilteringModel {
-	private List<Tweet> recentTweets;
 	private TermGraph eventGraph;
 	private TermGraph bgGraph;
 	private double ratio;
 	private double relativeRatio;
-	private String outputPath;
+
 	private double bgThreshold;
 
 	private List<Tweet> descriptionTweets;
@@ -43,25 +42,29 @@ public class GraphBasedFilter extends FilteringModel {
 	public void init(List<Tweet> tweets) {
 		descriptionTweets = tweets;
 		eventGraph = new TermGraph(descriptionTweets, preprocessingUtils);
+		eventGraph.setMaxNKeyTerms(Configure.MAX_NUMBER_KEY_TERMS);
 		eventGraph.updateTermRank(timeStep - Configure.TEMPORAL_WINDOW);
 		for (Tweet tweet : tweets) {
 			recentTweets.add(tweet);
 		}
 		bgGraph = new TermGraph(recentTweets, preprocessingUtils);
+		bgGraph.setMaxNKeyTerms(Integer.MAX_VALUE);
 		bgGraph.updateTermRank(timeStep - Configure.TEMPORAL_WINDOW);
 		for (Tweet tweet : recentTweets) {
 			bgThreshold += bgScore(tweet);
 		}
 
 		timeStep = 0;
-		eventGraph.saveTermInfo("/home/hoang/attt/output/graph/event_terms_init.csv");
-		eventGraph.saveGraphToFile("/home/hoang/attt/output/graph/event_graph_init.csv");
-		bgGraph.saveTermInfo("/home/hoang/attt/output/graph/bg_terms_init.csv");
-		bgGraph.saveGraphToFile("/home/hoang/attt/output/graph/bg_graph_init.csv");
+
+		// eventGraph.saveTermInfo("/home/hoang/attt/output/graph/event_terms_init.csv");
+		// eventGraph.saveGraphToFile("/home/hoang/attt/output/graph/event_graph_init.csv");
+		// bgGraph.saveTermInfo("/home/hoang/attt/output/graph/bg_terms_init.csv");
+		// bgGraph.saveGraphToFile("/home/hoang/attt/output/graph/bg_graph_init.csv");
 
 		bgThreshold /= recentTweets.size();
 		bgThreshold /= Configure.MAX_DEVIATION_FROM_MEAN_RELEVANT_SCORE;
 		relativeRatio = ratio * bgGraph.getNActiveTerms() / eventGraph.getNActiveTerms();
+
 	}
 
 	protected double relevantScore(Tweet tweet) {
@@ -84,24 +87,26 @@ public class GraphBasedFilter extends FilteringModel {
 		int time = (int) (diff / Configure.TIME_STEP_WIDTH);
 		double weight = Math.pow(Configure.AMPLIFY_FACTOR, time);
 
-		eventGraph.updateTermEdges(tweet.getTerms(preprocessingUtils), time, weight);
-		eventGraph.updateTermNRelevantTweets(tweet, preprocessingUtils);
-		eventGraph.updateTermNAllTweets(tweet, preprocessingUtils);
+		if (!tweet.getText().trim().startsWith("RT @")) {
+			eventGraph.updateTermEdges(tweet.getTerms(preprocessingUtils), time, weight);
+			eventGraph.updateTermNRelevantTweets(tweet, preprocessingUtils);
+			eventGraph.updateTermNAllTweets(tweet, preprocessingUtils);
 
-		bgGraph.updateTermEdges(tweet.getTerms(preprocessingUtils), time, weight);
-		bgGraph.updateTermNRelevantTweets(tweet, preprocessingUtils);
-		bgGraph.updateTermNAllTweets(tweet, preprocessingUtils);
+			bgGraph.updateTermEdges(tweet.getTerms(preprocessingUtils), time, weight);
+			bgGraph.updateTermNRelevantTweets(tweet, preprocessingUtils);
+			bgGraph.updateTermNAllTweets(tweet, preprocessingUtils);
+		}
 
 		if (super.isToUpdate(tweet)) {
 			timeStep = time;
 			// event graph
 			eventGraph.updateTermRank(timeStep - Configure.TEMPORAL_WINDOW);
-			eventGraph.saveTermInfo(String.format("%s/graph/event_terms_%d.csv", outputPath, timeStep));
-			eventGraph.saveGraphToFile(String.format("%s/graph/event_graph_%d.csv", outputPath, timeStep));
+			eventGraph.saveTermInfo(String.format("%s/%s_event_terms_%d.csv", outputPath, dataset, timeStep));
+			eventGraph.saveGraphToFile(String.format("%s/%s_event_graph_%d.csv", outputPath, dataset, timeStep));
 			// background graph
 			bgGraph.updateTermRank(timeStep - Configure.TEMPORAL_WINDOW);
-			bgGraph.saveTermInfo(String.format("%s/graph/bg_terms_%d.csv", outputPath, timeStep));
-			bgGraph.saveGraphToFile(String.format("%s/graph/bg_graph_%d.csv", outputPath, timeStep));
+			bgGraph.saveTermInfo(String.format("%s/%s_bg_terms_%d.csv", outputPath, dataset, timeStep));
+			bgGraph.saveGraphToFile(String.format("%s/%s_bg_graph_%d.csv", outputPath, dataset, timeStep));
 
 			// ratio
 			relativeRatio = ratio * bgGraph.getNActiveTerms() / eventGraph.getNActiveTerms();
@@ -141,15 +146,17 @@ public class GraphBasedFilter extends FilteringModel {
 		}
 	}
 
-	public void filter(TweetStream stream, String _outputPath) {
+	public void filter(TweetStream stream, String _outputPath, String _dataset) {
 		// determine startTime
 		System.out.println("determining startTime");
 		super.setStartTime(stream, descriptionTweets.get(descriptionTweets.size() - 1));
 		System.out.println("done!");
 
 		outputPath = _outputPath;
-		String filteredTweetFile = String.format("%s/graph/filteredTweets.txt", outputPath);
-		String candidateTweetFile = String.format("%s/graph/candidateTweets.csv", outputPath);
+		dataset = _dataset;
+
+		String filteredTweetFile = String.format("%s/%s_graphFilteredTweets.txt", outputPath, dataset);
+		String candidateTweetFile = String.format("%s/%s_candidateTweets.csv", outputPath, dataset);
 
 		for (Tweet tweet : recentTweets) {
 			updateTermNAllTweet(tweet);
@@ -177,11 +184,9 @@ public class GraphBasedFilter extends FilteringModel {
 					update(tweet);
 				}
 			} else {
-				if (bgScore > 0) {
-					updateTermNAllTweet(tweet);
-					if (rand.nextDouble() < Configure.BACKGROUND_TWEET_SAMPLING_RATIO) {
-						updateBgGraphOnly(tweet);
-					}
+				updateTermNAllTweet(tweet);
+				if (rand.nextDouble() < Configure.BACKGROUND_TWEET_SAMPLING_RATIO) {
+					updateBgGraphOnly(tweet);
 				}
 			}
 			if (eventScore > bgScore || tweet.getIsRelevant() == true) {

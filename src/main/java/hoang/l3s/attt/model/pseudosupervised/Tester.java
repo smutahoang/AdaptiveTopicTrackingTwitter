@@ -111,7 +111,7 @@ public class Tester {
 				String startDate = "2017-01-28";
 				SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 				TweetStream stream = new TweetStream(Configure.STREAM_PATH, dateFormat.parse(startDate));
-				filter.filter(stream, Configure.OUTPUT_PATH);
+				filter.filter(stream, Configure.OUTPUT_PATH, "travel_ban");
 
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block
@@ -138,7 +138,7 @@ public class Tester {
 
 				SimpleDateFormat dateTimeFormatter = new SimpleDateFormat(dateFormat, Locale.US);
 				TweetStream stream = new TweetStream(Configure.STREAM_PATH, dateTimeFormatter.parse(startDate));
-				filter.filter(stream, output);
+				filter.filter(stream, output, "travel_ban");
 
 			} catch (ParseException e) {
 				// TODO Auto-generated catch block

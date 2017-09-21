@@ -10,7 +10,7 @@ public class KeyWordMatchingFilter extends FilteringModel {
 
 	public void init(List<Tweet> tweets) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public double relevantScore(Tweet tweet) {
@@ -20,14 +20,12 @@ public class KeyWordMatchingFilter extends FilteringModel {
 
 	public void update(Tweet tweet) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
-	
-	public void filter(TweetStream stream, String ouputPath) {
+	public void filter(TweetStream stream, String ouputPath, String dataset) {
 		// TODO Auto-generated method stub
-		
-	}
 
+	}
 
 }

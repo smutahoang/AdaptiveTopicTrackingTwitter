@@ -78,7 +78,7 @@ public class Crisis {
 				"E:/code/java/AdaptiveTopicTrackingTwitter/data/crisis/odered/2012_Sandy_Hurricane-ontopic_offtopic.csv",
 				// "C:/Users/Tuan-Anh Hoang/Desktop/attt/psFilteredTweets.txt",
 				// "C:/Users/Tuan-Anh Hoang/Desktop/attt/psPerf.csv");
-				"C:/Users/Tuan-Anh Hoang/Desktop/attt/filteredTweets.txt",
-				"C:/Users/Tuan-Anh Hoang/Desktop/attt/graphPerf.csv");
+				"C:/Users/Tuan-Anh Hoang/Desktop/attt/2012_Sandy_Hurricane_psFilteredTweets.txt",
+				"C:/Users/Tuan-Anh Hoang/Desktop/attt/psPerf.csv");
 	}
 }

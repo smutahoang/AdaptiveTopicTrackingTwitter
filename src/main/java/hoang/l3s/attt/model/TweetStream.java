@@ -35,6 +35,9 @@ public class TweetStream {
 	private Tweet currentEventStreamTweet;
 	private String preEventStreamTweetId;
 
+	private int nPostPaddingTweets = 500;
+	private int nConsumedPaddingTweets;
+
 	private void openNextMainStreamFile() {
 		try {
 			filename = String.format("%s/statuses.log.%s.gz", mainStreamPath, fileDateFormat.format(date));
@@ -80,6 +83,7 @@ public class TweetStream {
 			shift = Long.parseLong(currentMainStreamTweet.getTweetId())
 					- Long.parseLong(currentEventStreamTweet.getTweetId());
 			preEventStreamTweetId = null;
+			nConsumedPaddingTweets = 0;
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
@@ -169,7 +173,6 @@ public class TweetStream {
 			while (true) {
 				String line = eventStreamReader.readLine();
 				if (line == null) {
-					// close current file
 					return null;
 				}
 
@@ -197,6 +200,13 @@ public class TweetStream {
 		return null;
 	}
 
+	private void eofEventStream() {
+		nConsumedPaddingTweets++;
+		if (nConsumedPaddingTweets >= nPostPaddingTweets) {
+			System.exit(-1);
+		}
+	}
+
 	public Tweet getTweet() {
 		Tweet tweet = null;
 		if (eventStreamPath == null) {
@@ -206,6 +216,7 @@ public class TweetStream {
 			return tweet;
 		}
 		if (currentEventStreamTweet == null) {
+			eofEventStream();
 			tweet = currentMainStreamTweet;
 			currentMainStreamTweet = readMainStream();
 			tweet.setAlignedTweet(preEventStreamTweetId);

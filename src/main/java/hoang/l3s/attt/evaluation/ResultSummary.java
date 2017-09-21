@@ -43,7 +43,7 @@ public class ResultSummary {
 				}
 				br.close();
 
-				List<Integer> topIndexes = RankingUtils.getTopElements(K, rank);
+				List<Integer> topIndexes = RankingUtils.getIndexTopElements(K, rank);
 				topTerms[i] = new String[topIndexes.size()];
 				topTermsRank[i] = new double[topIndexes.size()];
 				for (int j = 0; j < topIndexes.size(); j++) {
@@ -121,9 +121,10 @@ public class ResultSummary {
 						line = br.readLine();
 						String[] tokens = line.split("\t");
 						bw.write(String.format("<p>%s", tokens[1]));
-						/*for (int j = 3; j < tokens.length; j++) {
-							bw.write(String.format(", %s", tokens[j]));
-						}*/
+						/*
+						 * for (int j = 3; j < tokens.length; j++) {
+						 * bw.write(String.format(", %s", tokens[j])); }
+						 */
 						bw.write("</p>\n");
 
 					}
