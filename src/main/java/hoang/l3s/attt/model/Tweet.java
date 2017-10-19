@@ -77,4 +77,13 @@ public class Tweet {
 	public boolean getIsRelevant() {
 		return isRelevant;
 	}
+
+	public boolean isRetweet() {
+		// TODO: refactorizing this to make it more efficient
+		return text.trim().startsWith("RT @");
+	}
+
+	public void print(String prefix) {
+		System.out.printf("%s: time = %d user = %s id = %s text = %s\n", prefix, createdAt, userId, tweetId, text);
+	}
 }

@@ -6,7 +6,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -96,9 +99,9 @@ public class TwitterLDA {
 		outputPath = _outputPath;
 		nTopics = _nTopics;
 
-		burningPeriod = 100;
-		maxIteration = 200;
-		samplingGap = 10;
+		burningPeriod = 10;
+		maxIteration = 50;
+		samplingGap = 2;
 
 	}
 
@@ -122,10 +125,10 @@ public class TwitterLDA {
 			int nTweets = 0;
 			while ((line = br.readLine()) != null) {
 				String[] tokens = line.split("\t");
-				int epochId = getEpoch(Long.parseLong(tokens[1]));
+				int epochId = getEpoch(Long.parseLong(tokens[2]));
 				String tweetId = tokens[0];
-				allRawTweets.put(tweetId, tokens[3]);
-				List<String> terms = preprocessingUtils.extractTermInTweet(tokens[3]);
+				allRawTweets.put(tweetId, tokens[4]);
+				List<String> terms = preprocessingUtils.extractTermInTweet(tokens[4]);
 				for (int i = 0; i < terms.size(); i++) {
 					String word = terms.get(i);
 					if (wordNTweets.containsKey(word)) {
@@ -859,6 +862,51 @@ public class TwitterLDA {
 		}
 	}
 
+	private void outputTopicDistributionOverTime() {
+		int[][] nTweets = new int[epoches.length][nTopics];
+		for (int e = 0; e < epoches.length; e++) {
+			for (int z = 0; z < nTopics; z++) {
+				nTweets[e][z] = 0;
+			}
+		}
+		for (int e = 0; e < epoches.length; e++) {
+			for (int t = 0; t < epoches[e].tweets.length; t++) {
+				int z = epoches[e].tweets[t].inferedTopic;
+				nTweets[e][z]++;
+			}
+		}
+
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yy:HH:mm:ss");
+
+		String[] timeStamps = new String[epoches.length];
+		for (int e = 0; e < epoches.length; e++) {
+			long time = startTime + e * TIME_STEP_WIDTH;
+			cal.setTimeInMillis(time);
+			timeStamps[e] = formatter.format(cal.getTime());
+		}
+
+		try {
+			String fileName = outputPath + "/topicDistributionOverTime.csv";
+			File file = new File(fileName);
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			BufferedWriter bw = new BufferedWriter(new FileWriter(file.getAbsoluteFile()));
+			bw.write("topic,proportion,timeStep\n");
+			for (int e = 0; e < epoches.length; e++) {
+				for (int z = 0; z < nTopics; z++) {
+					bw.write(String.format("Topic-%d,%d,%s\n", z, nTweets[e][z], timeStamps[e]));
+				}
+			}
+			bw.close();
+		} catch (Exception e) {
+			System.out.println("Error in writing out topic distribution overtime!");
+			e.printStackTrace();
+			System.exit(0);
+		}
+	}
+
 	private void outputTweetTopicTopTweetsByPerplexity(int k) {
 		int[] tweetPerTopicCount = new int[nTopics];
 		int tweetBackgroundTopicCount = 0;
@@ -1220,12 +1268,13 @@ public class TwitterLDA {
 		topicTopTweets = new HashMap<Integer, HashSet<String>>();
 
 		outputTweetTopicTopTweetsByPerplexity(200);
-		//outputTweetTopicTopTweetsEntropy(200);
+		// outputTweetTopicTopTweetsEntropy(200);
 		outputTweetTopicTopTweetsSumProbUniqueWords(200);
 		outputTweetTopicRepresentativeTweets(50);
 
 		outputUserTopicDistribution();
 		outputEmpiricalGlobalTopicDistribution();
+		outputTopicDistributionOverTime();
 		outputLikelihood();
 		outputCoinBias();
 	}
@@ -1234,8 +1283,9 @@ public class TwitterLDA {
 
 		new Configure();
 
-		TwitterLDA twitterLDA = new TwitterLDA("C:/Users/Tuan-Anh Hoang/Desktop/attt/psFilteredTweets.txt",
-				"C:/Users/Tuan-Anh Hoang/Desktop/attt/pseudoSupervised", 20);
+		TwitterLDA twitterLDA = new TwitterLDA(
+				"C:/Users/Tuan-Anh Hoang/Desktop/attt/travel_ban_graphFilteredTweets.txt",
+				"C:/Users/Tuan-Anh Hoang/Desktop/attt/travel_ban", 10);
 		twitterLDA.readData();
 		// twitterLDA.outputReformattedData();
 		twitterLDA.learnModel();

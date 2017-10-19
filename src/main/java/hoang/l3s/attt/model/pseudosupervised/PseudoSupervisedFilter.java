@@ -18,22 +18,23 @@ import hoang.l3s.attt.model.TweetStream;
 import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 
-public class PseudoSupervisedFilter extends FilteringModel {	
+public class PseudoSupervisedFilter extends FilteringModel {
+	protected List<Tweet> recentRelevantTweets;
 	private Classifier classifier;
 	private HashSet<String> keywords;
 
-	public PseudoSupervisedFilter(LinkedList<Tweet> _recentTweets) {
-		recentTweets = _recentTweets;
+	public PseudoSupervisedFilter(String _dataset, List<Tweet> _eventDescriptionTweets, List<Tweet> _recentTweets,
+			TweetStream _stream, String _outputPath) {
+		super.dataset = _dataset;
+		super.outputPath = _outputPath;
+		super.eventDescriptionTweets = _eventDescriptionTweets;
+		recentRelevantTweets = _eventDescriptionTweets;
+		super.recentTweets = _recentTweets;
 		preprocessingUtils = new TweetPreprocessingUtils();
 		rand = new Random(0);
-		nRelevantTweets = 0;
-	}
-
-	public void init(List<Tweet> _recentRelevantTweets) {
-		recentRelevantTweets = _recentRelevantTweets;
-		// train the first classifier
+		super.nRelevantTweets = 0;
 		trainClassifier();
-		// classifier.saveClassifier("/home/hoang/attt/output/pseudo_supervised/classifier_init.csv");
+		super.stream = _stream;
 	}
 
 	/***
@@ -145,20 +146,16 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	/***
 	 * 
 	 */
-	public void update(Tweet relevantTweet) {
-		System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> update");
-		long diff = relevantTweet.getPublishedTime() - startTime;
-		int time = (int) (diff / Configure.TIME_STEP_WIDTH);
-		timeStep = time;
-
+	public void update() {
+		currentTime++;
+		nextUpdateTime += Configure.TIME_STEP_WIDTH;
 		// remove top oldest relevant tweets
 		removeOldestRelevantTweets();
-
 		// re-train the classifier
 		getKeyWords();
 		List<Tweet> nonRelevantTweets = sampleNonRelevantTweets();
 		classifier = new Classifier(recentRelevantTweets, nonRelevantTweets, preprocessingUtils);
-		classifier.saveClassifier(String.format("%s/%s_classifier_%d.csv", outputPath, dataset, timeStep));
+		classifier.saveClassifier(String.format("%s/%s_classifier_%d.csv", outputPath, dataset, currentTime));
 	}
 
 	/***
@@ -174,14 +171,11 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		}
 	}
 
-	public void filter(TweetStream stream, String _outputPath, String _dataset) {
+	public void filter() {
 		// determine startTime
 		System.out.println("determining startTime");
 		super.setStartTime(stream, recentRelevantTweets.get(recentRelevantTweets.size() - 1));
 		System.out.println("done!");
-
-		outputPath = _outputPath;
-		dataset = _dataset;
 
 		String output_filename = String.format("%s/%s_psFilteredTweets.txt", outputPath, dataset);
 
@@ -193,7 +187,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 
 		Tweet tweet = null;
 		while ((tweet = stream.getTweet()) != null) {
-			if (tweet.getTerms(preprocessingUtils).size() == 0) {
+			if (super.isInvalidTweet(tweet)) {
 				continue;
 			}
 			String result = classifier.classify(tweet);
@@ -204,21 +198,21 @@ public class PseudoSupervisedFilter extends FilteringModel {
 				if (Configure.updatingScheme == UpdatingScheme.TWEET_COUNT) {
 					// check if is the update time for update
 					if (super.isToUpdate(tweet)) {
-						update(tweet);
+						update();
 					}
 				}
 			} else {
 				// insert t to Window and remove some old tweets in W
 				System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>REMOVE");
 				for (int i = 0; i < Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW; i++)
-					recentTweets.removeFirst();
+					((LinkedList<Tweet>) recentTweets).removeFirst();
 				recentTweets.add(tweet);
 			}
 
 			// check if is the update time for update
 			if (Configure.updatingScheme == UpdatingScheme.PERIODIC) {
 				if (super.isToUpdate(tweet)) {
-					update(tweet);
+					update();
 				}
 			}
 		}

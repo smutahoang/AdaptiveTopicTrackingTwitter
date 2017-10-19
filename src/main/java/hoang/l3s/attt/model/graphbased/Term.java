@@ -15,7 +15,7 @@ public class Term {
 	private double sumInWeight;
 	private double sumAdjWeight;// undirected
 
-	private double rank;
+	private double importance;
 
 	public Term(int _lastUpdate) {
 		nRelevantTweets = 0;
@@ -28,7 +28,7 @@ public class Term {
 		sumOutWeight = 0;
 		sumInWeight = 0;
 		sumAdjWeight = 0;
-		rank = -1;
+		importance = -1;
 	}
 
 	public boolean isNew() {
@@ -43,12 +43,20 @@ public class Term {
 		nRelevantTweets += delta;
 	}
 
+	public void setNRelevantTweets(int n) {
+		nRelevantTweets = n;
+	}
+
 	public int getNRelevantTweets() {
 		return nRelevantTweets;
 	}
 
 	public void increaseNAllTweets(int delta) {
 		nAllTweets += delta;
+	}
+
+	public void setNAllTweets(int n) {
+		nAllTweets = n;
 	}
 
 	public int getNAllTweets() {
@@ -161,11 +169,11 @@ public class Term {
 		}
 	}
 
-	public void setRank(double _rank) {
-		rank = _rank;
+	public void setImportance(double _importance) {
+		importance = _importance;
 	}
 
-	public double getRank() {
-		return rank;
+	public double getImportance() {
+		return importance;
 	}
 }

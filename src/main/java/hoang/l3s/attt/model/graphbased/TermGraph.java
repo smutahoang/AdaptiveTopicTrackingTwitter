@@ -1,6 +1,8 @@
 package hoang.l3s.attt.model.graphbased;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,7 +37,7 @@ public class TermGraph {
 
 	private boolean verbose = false;
 	private boolean simpleKeywordMatch = false;
-	private boolean simpleTermRank = true;
+	private boolean simpleTermImportance = true;
 	private boolean keytermFlag = true;
 
 	private int maxNKeyTerms;
@@ -328,14 +330,18 @@ public class TermGraph {
 		maxNKeyTerms = _maxNKeyTerms;
 	}
 
-	private void getKeyTermsByRank() {
+	public void updateKeyTerms() {
+		// System.out.printf("nActiveTerms = %d\n", nActiveTerms);
 		int k = (int) (Configure.PROPORTION_OF_KEYTERMS * nActiveTerms);
+		// System.out.printf("nKeyterms = %d\n", k);
 		if (k > maxNKeyTerms) {
 			k = maxNKeyTerms;
 		}
 		if (k < Configure.MIN_NUMBER_KEY_TERMS) {
 			k = Configure.MIN_NUMBER_KEY_TERMS;
 		}
+
+		// System.out.printf("nKeyterms = %d", k);
 
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
 		int nTerms = adjList.size();
@@ -344,8 +350,13 @@ public class TermGraph {
 			if (term == null) {
 				continue;
 			}
-			double s = term.getRank();
-			s *= Math.log(1 + ((double) term.getNRelevantTweets()) / term.getNAllTweets());
+			double s = term.getImportance();
+			if (term.getNRelevantTweets() >= Configure.MIN_KEYTERM_NUMBER_TWEETS) {
+				double r = ((double) term.getNRelevantTweets()) / term.getNAllTweets();
+				s *= Math.log(1 + r);
+			} else {
+				s = 0;
+			}
 			if (queue.size() < k) {
 				queue.add(new KeyValue_Pair(i, s));
 			} else {
@@ -361,44 +372,45 @@ public class TermGraph {
 		while (!queue.isEmpty()) {
 			keyTerms.add(queue.poll().getIntKey());
 		}
+
 	}
 
 	/***
-	 * compute rank of terms
+	 * compute importance of terms
 	 */
-	public void updateTermRank(int lastUpdateTime) {
+	public void updateTermImportance(int lastUpdateTime) {
 		removeOutdateTerms(lastUpdateTime);
 		int nTerms = adjList.size();
-		double[] tempRank = new double[nTerms];
+		double[] tempImportance = new double[nTerms];
 		for (int i = 0; i < nTerms; i++) {
 			Term term = adjList.get(i);
 			if (term != null) {
-				term.setRank(1.0 / nActiveTerms);
+				term.setImportance(1.0 / nActiveTerms);
 				term.age();
 			}
 		}
 		for (int iter = 0; iter < MAX_ITERATIONS; iter++) {
 			for (int i = 0; i < nTerms; i++) {
-				tempRank[i] = DAMPING_FACTOR / nActiveTerms;
+				tempImportance[i] = DAMPING_FACTOR / nActiveTerms;
 			}
 			for (int i = 0; i < nTerms; i++) {
 				Term term = adjList.get(i);
 				if (term == null) {
 					continue;
 				}
-				double rank = term.getRank();
+				double importance = term.getImportance();
 				double sum = term.getSumOutWeight() + term.getSumInWeight();
 
 				for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getOutTerms().entrySet()) {
 					int j = adjTermIter.getKey();
 					AdjacentTerm adjTerm = adjTermIter.getValue();
-					tempRank[j] += (1 - DAMPING_FACTOR) * rank * adjTerm.getWeight() / sum;
+					tempImportance[j] += (1 - DAMPING_FACTOR) * importance * adjTerm.getWeight() / sum;
 				}
 
 				for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getInTerms().entrySet()) {
 					int j = adjTermIter.getKey();
 					AdjacentTerm adjTerm = adjTermIter.getValue();
-					tempRank[j] += (1 - DAMPING_FACTOR) * rank * adjTerm.getWeight() / sum;
+					tempImportance[j] += (1 - DAMPING_FACTOR) * importance * adjTerm.getWeight() / sum;
 				}
 
 			}
@@ -406,59 +418,37 @@ public class TermGraph {
 			for (int i = 0; i < nTerms; i++) {
 				Term term = adjList.get(i);
 				if (term != null) {
-					term.setRank(tempRank[i]);
+					term.setImportance(tempImportance[i]);
 				}
 			}
 		}
 		// TODO: diversified pagerank
 
-		// times with ratio of relevant tweets/ all tweets
-		/*
-		 * double sum = 0; for (int i = 0; i < nTerms; i++) { Term term =
-		 * adjList.get(i); if (term != null) { System.out.printf(
-		 * "i = %d term = %s rank = %f nAllTweets = %d nRelevantTweets = %d\n",
-		 * i, strTerms[i], term.getRank(), term.getNAllTweets(),
-		 * term.getNRelevantTweets());
-		 * 
-		 * tempRank[i] = term.getRank() * term.getNRelevantTweets() /
-		 * term.getNAllTweets(); sum += tempRank[i]; System.out.printf(
-		 * "i = %d term = %s rank = %f sum = %f\n", i, strTerms[i],
-		 * term.getRank(), sum);
-		 * 
-		 * } }
-		 * 
-		 * for (int i = 0; i < nTerms; i++) { Term term = adjList.get(i); if
-		 * (term != null) { term.setRank(tempRank[i] / sum); } }
-		 */
 		nNewTerms = 0;
 		sumNewTermFrequent = 0;
 
-		// get keyword
-		getKeyTermsByRank();
-
-		// System.exit(-1);
 	}
 
 	/***
-	 * return rank of term j
+	 * return importance of term j
 	 * 
 	 * @param j
 	 * @return
 	 */
-	private double getTermRank(int j) {
+	private double getTermImportance(int j) {
 		Term term = adjList.get(j);
 		try {
-			double rank = term.getRank();
-			if (rank > 0) {
-				return rank * (1 - ADAPTIVE_FACTOR);
+			double importance = term.getImportance();
+			if (importance > 0) {
+				return importance * (1 - ADAPTIVE_FACTOR);
 			}
-			if (simpleTermRank)
+			if (simpleTermImportance)
 				return 0;
 			int frequent = term.getNRelevantTweets();
 			return (ADAPTIVE_FACTOR * frequent / sumNewTermFrequent);
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.out.printf("in getTermRank: Term %d is NULL!!!!\n", j);
+			System.out.printf("in getTermImportance: Term %d is NULL!!!!\n", j);
 			System.exit(-1);
 		}
 
@@ -489,7 +479,7 @@ public class TermGraph {
 	 * @param tweet
 	 * @return
 	 */
-	public double getLikelihood(Tweet tweet, TweetPreprocessingUtils preprocessingUtils) {
+	public double getScore(Tweet tweet, TweetPreprocessingUtils preprocessingUtils) {
 		if (simpleKeywordMatch) {
 			if (keywordMatch(tweet.getText().toLowerCase()))
 				return 1;
@@ -526,7 +516,7 @@ public class TermGraph {
 			if (u == -1)
 				continue;
 			uTerm = adjList.get(u);
-			pu = getTermRank(u);
+			pu = getTermImportance(u);
 			Wudot = uTerm.getSumOutWeight();
 			if (Wudot <= 0)
 				continue;
@@ -537,7 +527,7 @@ public class TermGraph {
 				if (v == -1)
 					continue;
 				vTerm = adjList.get(v);
-				pv = getTermRank(v);
+				pv = getTermImportance(v);
 				Wdotv = vTerm.getSumInWeight();
 				if (Wdotv <= 0)
 					continue;
@@ -610,7 +600,7 @@ public class TermGraph {
 				}
 				bw.write(String.format(",ACTIVE,%d,%d,%d,%d", term.getLastUpdate(), term.getNRelevantTweets(),
 						term.getNAllTweets(), term.getInTerms().size()));
-				bw.write(String.format(",%f", term.getRank()));
+				bw.write(String.format(",%f", term.getImportance()));
 				List<Integer> topAdjTerms = RankingUtils.getTopAdjTerms(5, term.getInTerms());
 				for (int j = 0; j < topAdjTerms.size(); j++) {
 					int k = topAdjTerms.get(j);
@@ -643,6 +633,84 @@ public class TermGraph {
 				}
 			}
 			bw.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	}
+
+	public void saveKeyTermToFile(String filename) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+			for (int i : keyTerms) {
+				Term term = adjList.get(i);
+				double s = term.getImportance();
+				double r = ((double) term.getNRelevantTweets()) / term.getNAllTweets();
+				s *= Math.log(1 + r);
+				bw.write(String.format("[[%s]],%f,%f\n", strTerms[i], term.getImportance(), s));
+			}
+			bw.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+
+	}
+
+	public TermGraph(String termfile, String graphfile, int time) {
+		try {
+			init();
+
+			BufferedReader br = new BufferedReader(new FileReader(termfile));
+			String line = null;
+			int maxIndex = 0;
+			while ((line = br.readLine()) != null) {
+				int index = Integer.parseInt(line.split(",")[0]);
+				if (index > maxIndex) {
+					maxIndex = index;
+				}
+			}
+
+			for (int i = 0; i <= maxIndex; i++) {
+				adjList.add(null);
+			}
+			br.close();
+
+			br = new BufferedReader(new FileReader(termfile));
+			line = null;
+			while ((line = br.readLine()) != null) {
+				if (line.contains("[[null]]")) {
+					continue;
+				}
+				nActiveTerms++;
+				String[] tokens = line.split("\\]\\],");
+				String[] subTokens = tokens[0].split(",\\[\\[");
+				int index = Integer.parseInt(subTokens[0]);
+				String name = subTokens[1];
+				term2Index.put(name, index);
+				strTerms[index] = name;
+
+				subTokens = tokens[1].split(",");
+				int lastUpdate = Integer.parseInt(subTokens[1]);
+				int nRelevantTweets = Integer.parseInt(subTokens[2]);
+				int nAllTweets = Integer.parseInt(subTokens[3]);
+				Term term = new Term(lastUpdate);
+				term.setNRelevantTweets(nRelevantTweets);
+				term.setNAllTweets(nAllTweets);
+				adjList.set(index, term);
+			}
+			br.close();
+
+			br = new BufferedReader(new FileReader(graphfile));
+			line = null;
+			while ((line = br.readLine()) != null) {
+				String[] tokens = line.split("\t");
+				int srcTerm = getTermIndex(tokens[0]);
+				int desTerm = getTermIndex(tokens[1]);
+				addEdge(srcTerm, desTerm, Double.parseDouble(tokens[2]));
+			}
+			br.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);

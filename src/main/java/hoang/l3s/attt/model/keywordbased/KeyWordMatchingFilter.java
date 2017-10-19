@@ -4,7 +4,7 @@ import java.util.List;
 
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
-import hoang.l3s.attt.model.TweetStream;
+
 
 public class KeyWordMatchingFilter extends FilteringModel {
 
@@ -18,12 +18,12 @@ public class KeyWordMatchingFilter extends FilteringModel {
 		return 0;
 	}
 
-	public void update(Tweet tweet) {
+	public void update() {
 		// TODO Auto-generated method stub
 
 	}
 
-	public void filter(TweetStream stream, String ouputPath, String dataset) {
+	public void filter() {
 		// TODO Auto-generated method stub
 
 	}

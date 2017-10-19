@@ -18,12 +18,13 @@ public class PseudoFeedbackBasedFilter extends FilteringModel {
 		return 0;
 	}
 
-	public void update(Tweet tweet) {
+	@Override
+	public void update() {
 		// TODO Auto-generated method stub
 
 	}
 
-	public void filter(TweetStream stream, String ouputPath, String dataset) {
+	public void filter() {
 		// TODO Auto-generated method stub
 
 	}

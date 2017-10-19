@@ -3,7 +3,6 @@ package hoang.l3s.attt.model.languagemodel;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.util.ArrayList;
 import java.util.List;
 
 import hoang.l3s.attt.configure.Configure;
@@ -33,8 +32,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 		buffer = recentRelevantTweets;
 		bgLanguageModel.train(buffer, Configure.SmoothingType.NO_SMOOTHING);
 
-		String filename = String.format("%s/language_model/model_%d.csv", Configure.OUTPUT_PATH,
-				bgLanguageModel.getNUpdates());
+		String filename = String.format("%s/language_model/model_%d.csv", outputPath, bgLanguageModel.getNUpdates());
 		bgLanguageModel.save(filename);
 	}
 
@@ -43,7 +41,6 @@ public class LanguageModelBasedFilter extends FilteringModel {
 	}
 
 	public void update(Tweet tweet) {
-		// TODO Auto-generated method stub
 		switch (Configure.RETENTION_TECHNIQUE) {
 		case FORGET:
 			updateForget(tweet);
@@ -52,8 +49,7 @@ public class LanguageModelBasedFilter extends FilteringModel {
 			updateQueue(tweet);
 			break;
 		}
-		String filename = String.format("%s/language_model/model_%d.csv", Configure.OUTPUT_PATH,
-				bgLanguageModel.getNUpdates());
+		String filename = String.format("%s/language_model/model_%d.csv", outputPath, bgLanguageModel.getNUpdates());
 		bgLanguageModel.save(filename);
 	}
 
@@ -125,5 +121,17 @@ public class LanguageModelBasedFilter extends FilteringModel {
 			}
 			outputCandidateTweet(tweet, s, candidateTweetFile);
 		}
+	}
+
+	@Override
+	protected void update() {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void filter() {
+		// TODO Auto-generated method stub
+		
 	}
 }

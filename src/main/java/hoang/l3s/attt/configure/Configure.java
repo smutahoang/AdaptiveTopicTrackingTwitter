@@ -30,15 +30,18 @@ public class Configure {
 	public final static int NUMBER_NEW_RELEVANT_TWEETS = 100;
 
 	// constants for graph based model
-	public final static int TEMPORAL_WINDOW = 12;
+	public final static int TEMPORAL_WINDOW_SIZE = 12;
 	// public final static double AMPLIFY_FACTOR = 1.029;// decay by a half per
 	// timestep
 	public final static double AMPLIFY_FACTOR = 1.0;// not decay
-	public final static double BACKGROUND_TWEET_SAMPLING_RATIO = 0.2;
+	public final static double BACKGROUND_TWEET_SAMPLING_RATIO = 0.1;
 	public final static double PROPORTION_OF_KEYTERMS = 0.01;
-	public final static double MAX_DEVIATION_FROM_MEAN_RELEVANT_SCORE = 6;
+	// public final static double MAX_DEVIATION_FROM_MEAN_RELEVANT_SCORE = 6;
 	public final static int MAX_NUMBER_KEY_TERMS = 10;
 	public final static int MIN_NUMBER_KEY_TERMS = 2;
+	public final static int MIN_KEYTERM_NUMBER_TWEETS = 5;
+	public final static double MIN_RATIO_DEVIATION = 1.28;// 10 percent
+	public final static double MAX_EVENT_SCORE_DEVIATION = 1.28;
 
 	// constants for language model
 	// public static int nGram = 1;
@@ -61,9 +64,6 @@ public class Configure {
 
 	public static String WORKING_DIRECTORY;
 	public static String STOPWORD_PATH;
-	public static String FIRST_TWEET_PATH;
-	public static String STREAM_PATH;
-	public static String OUTPUT_PATH;
 
 	public Configure() {
 		if (AUTHOR == Author.HOANG) {
@@ -81,9 +81,6 @@ public class Configure {
 		}
 
 		Configure.STOPWORD_PATH = String.format("%s/data/stopwords", WORKING_DIRECTORY);
-		Configure.FIRST_TWEET_PATH = String.format("%s/data/firstTweets/travel_ban.txt", WORKING_DIRECTORY);
-		Configure.STREAM_PATH = String.format("%s/data/travel_ban", WORKING_DIRECTORY);
-		Configure.OUTPUT_PATH = String.format("%s/output", WORKING_DIRECTORY);
 
 	}
 

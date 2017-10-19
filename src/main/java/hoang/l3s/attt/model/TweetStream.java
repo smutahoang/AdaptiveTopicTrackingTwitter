@@ -35,9 +35,6 @@ public class TweetStream {
 	private Tweet currentEventStreamTweet;
 	private String preEventStreamTweetId;
 
-	private int nPostPaddingTweets = 500;
-	private int nConsumedPaddingTweets;
-
 	private void openNextMainStreamFile() {
 		try {
 			filename = String.format("%s/statuses.log.%s.gz", mainStreamPath, fileDateFormat.format(date));
@@ -60,6 +57,23 @@ public class TweetStream {
 		openNextMainStreamFile();
 		originalTweets = new HashSet<String>();
 		preEventStreamTweetId = null;
+		System.out.println("read first tweet in main stream");
+		currentMainStreamTweet = readMainStream();
+	}
+
+	public void mixEventStream(String _eventStreamPath) {
+		try {
+			eventStreamPath = _eventStreamPath;
+			eventStreamReader = new BufferedReader(new FileReader(eventStreamPath));
+			currentEventStreamTweet = readEventStream();
+			System.out.println("determining shift");
+			shift = Long.parseLong(currentMainStreamTweet.getTweetId())
+					- Long.parseLong(currentEventStreamTweet.getTweetId());
+			preEventStreamTweetId = null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
 	}
 
 	public TweetStream(String _mainStreamPath, String _eventStreamPath, Date _startDate) {
@@ -71,9 +85,8 @@ public class TweetStream {
 			tweetDateTimeFormater = new SimpleDateFormat("EEE MMM dd HH:mm:ss +0000 yyyy");
 			parser = new JsonParser();
 			openNextMainStreamFile();
-			if (eventStreamPath != null) {
-				eventStreamReader = new BufferedReader(new FileReader(eventStreamPath));
-			}
+			eventStreamReader = new BufferedReader(new FileReader(eventStreamPath));
+
 			originalTweets = new HashSet<String>();
 			System.out.println("read first tweet in main stream");
 			currentMainStreamTweet = readMainStream();
@@ -83,7 +96,7 @@ public class TweetStream {
 			shift = Long.parseLong(currentMainStreamTweet.getTweetId())
 					- Long.parseLong(currentEventStreamTweet.getTweetId());
 			preEventStreamTweetId = null;
-			nConsumedPaddingTweets = 0;
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
@@ -200,13 +213,6 @@ public class TweetStream {
 		return null;
 	}
 
-	private void eofEventStream() {
-		nConsumedPaddingTweets++;
-		if (nConsumedPaddingTweets >= nPostPaddingTweets) {
-			System.exit(-1);
-		}
-	}
-
 	public Tweet getTweet() {
 		Tweet tweet = null;
 		if (eventStreamPath == null) {
@@ -216,7 +222,6 @@ public class TweetStream {
 			return tweet;
 		}
 		if (currentEventStreamTweet == null) {
-			eofEventStream();
 			tweet = currentMainStreamTweet;
 			currentMainStreamTweet = readMainStream();
 			tweet.setAlignedTweet(preEventStreamTweetId);
