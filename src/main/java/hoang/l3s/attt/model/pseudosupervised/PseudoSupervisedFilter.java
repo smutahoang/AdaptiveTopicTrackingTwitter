@@ -21,12 +21,15 @@ import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 public class PseudoSupervisedFilter extends FilteringModel {
 	protected List<Tweet> recentRelevantTweets;
 	private Classifier classifier;
+	private HashMap<String, Integer> termRelevantTweetCount;
+	private HashMap<String, Integer> termRecentTweetCount;
 	private HashSet<String> keywords;
 
 	public PseudoSupervisedFilter(String _dataset, List<Tweet> _eventDescriptionTweets, List<Tweet> _recentTweets,
-			TweetStream _stream, String _outputPath) {
+			TweetStream _stream, long _endTime, String _outputPath, String _outputPrefix) {
 		super.dataset = _dataset;
 		super.outputPath = _outputPath;
+		super.outputPrefix = _outputPrefix;
 		super.eventDescriptionTweets = _eventDescriptionTweets;
 		recentRelevantTweets = _eventDescriptionTweets;
 		super.recentTweets = _recentTweets;
@@ -34,16 +37,22 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		rand = new Random(0);
 		super.nRelevantTweets = 0;
 		trainClassifier();
+		super.endTime = _endTime;
 		super.stream = _stream;
+		currentTime = 0;
 	}
 
 	/***
 	 * train the classifier for classifying tweets' relevance
 	 */
-	public void trainClassifier() {
+	private void trainClassifier() {
 		getKeyWords();
+		subSampleRelevantTweets();
 		List<Tweet> nonRelevantTweets = sampleNonRelevantTweets();
-		classifier = new Classifier(recentRelevantTweets, nonRelevantTweets, preprocessingUtils);
+		classifier = new Classifier(recentRelevantTweets, nonRelevantTweets, termRelevantTweetCount,
+				preprocessingUtils);
+		classifier.saveClassifier(
+				String.format("%s/%s_%s_classifier_%d.csv", outputPath, dataset, outputPrefix, currentTime));
 	}
 
 	/***
@@ -51,7 +60,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	 * 
 	 * @return
 	 */
-	public List<Tweet> sampleNonRelevantTweets() {
+	private List<Tweet> sampleNonRelevantTweets() {
 		List<Tweet> samples = new ArrayList<Tweet>();
 		double sampleRatio = (double) Configure.NONRELEVANT_TWEET_SAMPLING_RATIO * recentRelevantTweets.size()
 				/ recentTweets.size();
@@ -66,11 +75,30 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			}
 			// sample
 			if (flag) {
-				if (rand.nextDouble() < sampleRatio)
+				if (rand.nextDouble() < sampleRatio) {
 					samples.add(tweet);
+					if (samples.size() >= Configure.MAX_NUMBER_NONRELEVANT_TWEET) {
+						break;
+					}
+				}
 			}
 		}
 		return samples;
+	}
+
+	/***
+	 * sub-sample relevant tweets
+	 * 
+	 * @return
+	 */
+	private void subSampleRelevantTweets() {
+		int l = recentRelevantTweets.size();
+		while (l > Configure.MAX_NUMBER_RELEVANT_TWEET) {
+			int i = rand.nextInt(l);
+			recentRelevantTweets.set(i, recentRelevantTweets.get(l - 1));
+			recentRelevantTweets.remove(l - 1);
+			l--;
+		}
 	}
 
 	/***
@@ -78,10 +106,10 @@ public class PseudoSupervisedFilter extends FilteringModel {
 	 * 
 	 * @return
 	 */
-	public HashMap<String, Double> getTermTfIdf() {
+	private HashMap<String, Double> getTermTfIdf() {
 		HashMap<String, Double> tfIdfTermsMap = new HashMap<String, Double>();
-		HashMap<String, Integer> termTf = new HashMap<String, Integer>();
-		HashMap<String, Integer> termIdf = new HashMap<String, Integer>();
+		termRelevantTweetCount = new HashMap<String, Integer>();
+		termRecentTweetCount = new HashMap<String, Integer>();
 		// get tf
 		int nTerms = 0;
 		for (Tweet tweet : recentRelevantTweets) {
@@ -89,11 +117,11 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			int len = terms.size();
 			for (int j = 0; j < len; j++) {
 				String word = terms.get(j);
-				if (!termTf.containsKey(word))
-					termTf.put(word, 1);
+				if (!termRelevantTweetCount.containsKey(word))
+					termRelevantTweetCount.put(word, 1);
 				else {
-					int count = termTf.get(word);
-					termTf.put(word, count + 1);
+					int count = termRelevantTweetCount.get(word);
+					termRelevantTweetCount.put(word, count + 1);
 				}
 				nTerms++;
 			}
@@ -103,24 +131,25 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		for (Tweet tweet : recentTweets) {
 			List<String> terms = tweet.getTerms(preprocessingUtils);
 			for (String term : terms) {
-				if (!termTf.containsKey(term))
+				if (!termRelevantTweetCount.containsKey(term))
 					continue;
-				if (termIdf.containsKey(term)) {
-					int count = termIdf.get(term);
-					termIdf.put(term, count + 1);
+				if (termRecentTweetCount.containsKey(term)) {
+					int count = termRecentTweetCount.get(term);
+					termRecentTweetCount.put(term, count + 1);
 				} else
-					termIdf.put(term, 1);
+					termRecentTweetCount.put(term, 1);
 			}
 		}
 		// get tf-idf
 		int nRecentTweets = recentTweets.size();
-		Set<String> keys = termTf.keySet();
+		Set<String> keys = termRelevantTweetCount.keySet();
 		Iterator<String> iter = keys.iterator();
 		while (iter.hasNext()) {
 			String term = iter.next();
-			double tf = termTf.get(term);
-			if (termIdf.containsKey(term)) {
-				tfIdfTermsMap.put(term, (tf / nTerms) * Math.log((double) nRecentTweets / termIdf.get(term)));
+			double tf = termRelevantTweetCount.get(term);
+			if (termRecentTweetCount.containsKey(term)) {
+				tfIdfTermsMap.put(term,
+						(tf / nTerms) * Math.log((double) nRecentTweets / termRecentTweetCount.get(term)));
 			}
 
 		}
@@ -153,15 +182,18 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		removeOldestRelevantTweets();
 		// re-train the classifier
 		getKeyWords();
+		subSampleRelevantTweets();
 		List<Tweet> nonRelevantTweets = sampleNonRelevantTweets();
-		classifier = new Classifier(recentRelevantTweets, nonRelevantTweets, preprocessingUtils);
-		classifier.saveClassifier(String.format("%s/%s_classifier_%d.csv", outputPath, dataset, currentTime));
+		classifier = new Classifier(recentRelevantTweets, nonRelevantTweets, termRelevantTweetCount,
+				preprocessingUtils);
+		classifier.saveClassifier(
+				String.format("%s/%s_%s_classifier_%d.csv", outputPath, dataset, outputPrefix, currentTime));
 	}
 
 	/***
 	 * remove some oldest relevant tweets
 	 */
-	public void removeOldestRelevantTweets() {
+	private void removeOldestRelevantTweets() {
 		int nRemovingTweets = (int) (recentRelevantTweets.size() * Configure.OLD_RELEVANT_TWEET_REMOVING_RATIO);
 		for (int i = nRemovingTweets; i < recentRelevantTweets.size(); i++) {
 			recentRelevantTweets.set(i - nRemovingTweets, recentRelevantTweets.get(i));
@@ -177,7 +209,7 @@ public class PseudoSupervisedFilter extends FilteringModel {
 		super.setStartTime(stream, recentRelevantTweets.get(recentRelevantTweets.size() - 1));
 		System.out.println("done!");
 
-		String output_filename = String.format("%s/%s_psFilteredTweets.txt", outputPath, dataset);
+		String output_filename = String.format("%s/%s_%s_psFilteredTweets.txt", outputPath, dataset, outputPrefix);
 
 		// start filtering
 		File file = new File(output_filename);
@@ -190,33 +222,25 @@ public class PseudoSupervisedFilter extends FilteringModel {
 			if (super.isInvalidTweet(tweet)) {
 				continue;
 			}
+			if (tweet.getPublishedTime() > endTime) {
+				return;
+			}
 			String result = classifier.classify(tweet);
 			if (result.equals(Configure.RELEVANT_CLASS)) {
 				recentRelevantTweets.add(tweet);
 				outputTweet(tweet, output_filename);
 				nRelevantTweets++;
-				if (Configure.updatingScheme == UpdatingScheme.TWEET_COUNT) {
-					// check if is the update time for update
-					if (super.isToUpdate(tweet)) {
-						update();
-					}
-				}
 			} else {
 				// insert t to Window and remove some old tweets in W
-				System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>REMOVE");
+				// System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>REMOVE");
 				for (int i = 0; i < Configure.NUMBER_OLD_TWEET_REMOVING_WINDOW; i++)
 					((LinkedList<Tweet>) recentTweets).removeFirst();
 				recentTweets.add(tweet);
 			}
-
 			// check if is the update time for update
-			if (Configure.updatingScheme == UpdatingScheme.PERIODIC) {
-				if (super.isToUpdate(tweet)) {
-					update();
-				}
+			if (super.isToUpdate(tweet)) {
+				update();
 			}
 		}
-
 	}
-
 }

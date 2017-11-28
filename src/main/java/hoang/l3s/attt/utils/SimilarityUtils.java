@@ -1,6 +1,8 @@
 package hoang.l3s.attt.utils;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import hoang.l3s.attt.evaluation.Tweet;
 
@@ -29,5 +31,24 @@ public class SimilarityUtils {
 		}
 
 		return numerator / denominator;
+	}
+
+	public static double cosineSimilarity(HashMap<Integer, Double> p, HashMap<Integer, Double> q) {
+		double pnorm = 0;
+		double qnorm = 0;
+		double product = 0;
+		for (Map.Entry<Integer, Double> pair : p.entrySet()) {
+			int j = pair.getKey();
+			double w = pair.getValue();
+			pnorm += w * w;
+			if (q.containsKey(j)) {
+				product += w * q.get(j);
+			}
+		}
+		for (Map.Entry<Integer, Double> pair : q.entrySet()) {
+			double w = pair.getValue();
+			qnorm += w * w;
+		}
+		return product / Math.sqrt(pnorm * qnorm);
 	}
 }

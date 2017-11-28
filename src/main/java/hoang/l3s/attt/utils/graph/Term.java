@@ -1,6 +1,7 @@
-package hoang.l3s.attt.model.graphbased;
+package hoang.l3s.attt.utils.graph;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class Term {
 	private int nRelevantTweets;// #relavant tweets containing this term
@@ -176,4 +177,16 @@ public class Term {
 	public double getImportance() {
 		return importance;
 	}
+
+	public int nAdjTerms() {
+		int nAdjTerms = 0;
+		for (Map.Entry<Integer, AdjacentTerm> outAdjTermIter : outTerms.entrySet()) {
+			int j = outAdjTermIter.getKey();
+			if (!inTerms.containsKey(j))
+				nAdjTerms++;
+		}
+		nAdjTerms += outTerms.size();
+		return nAdjTerms;
+	}
+
 }

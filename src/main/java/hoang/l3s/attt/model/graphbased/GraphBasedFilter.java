@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.Random;
 
 import hoang.l3s.attt.configure.Configure;
+import hoang.l3s.attt.configure.Configure.UpdatingScheme;
 import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
 import hoang.l3s.attt.utils.DescriptiveStats;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
+import hoang.l3s.attt.utils.graph.TermGraph;
 
 public class GraphBasedFilter extends FilteringModel {
 	private TermGraph eventGraph;
@@ -28,10 +30,11 @@ public class GraphBasedFilter extends FilteringModel {
 	private double currentEventScoreVariance;
 
 	public GraphBasedFilter(String _dataset, List<Tweet> _eventDescriptionTweets, List<Tweet> _recentTweets,
-			TweetStream _stream, long _endTime, String _outputPath) {
+			TweetStream _stream, long _endTime, String _outputPath, String _outputPrefix) {
 		// io paths
 		super.dataset = _dataset;
 		super.outputPath = _outputPath;
+		super.outputPrefix = _outputPrefix;
 
 		// event description
 		super.eventDescriptionTweets = _eventDescriptionTweets;
@@ -183,8 +186,8 @@ public class GraphBasedFilter extends FilteringModel {
 		super.setStartTime(stream, eventDescriptionTweets.get(eventDescriptionTweets.size() - 1));
 		System.out.println("done!");
 
-		String filteredTweetFile = String.format("%s/%s_graphFilteredTweets.txt", outputPath, dataset);
-		String candidateTweetFile = String.format("%s/%s_candidateTweets.csv", outputPath, dataset);
+		String filteredTweetFile = String.format("%s/%s_%s_graphFilteredTweets.txt", outputPath, dataset, outputPrefix);
+		String candidateTweetFile = String.format("%s/%s_%s_candidateTweets.csv", outputPath, dataset, outputPrefix);
 
 		Tweet tweet = null;
 
@@ -223,6 +226,12 @@ public class GraphBasedFilter extends FilteringModel {
 				outputTweet(tweet, filteredTweetFile);
 
 				updateGraphsTerms(tweet);
+				if (Configure.updatingScheme == UpdatingScheme.TWEET_COUNT) {
+					// check if is the update time for update
+					if (super.isToUpdate(tweet)) {
+						update();
+					}
+				}
 			}
 
 			if (!flag) {

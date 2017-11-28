@@ -23,26 +23,23 @@ public abstract class FilteringModel {
 	protected Random rand;
 
 	protected String outputPath;
+	protected String outputPrefix;
 	protected String dataset;
-	
-	
+
 	protected void setStartTime(TweetStream stream, Tweet lastTweet) {
-		lastTweet.print("last tweet");
-		if (lastTweet.getPublishedTime() < 0) {
-			Tweet tweet = null;
-			while ((tweet = stream.getTweet()) != null) {
-				if (tweet.getTweetId().equals(lastTweet.getTweetId())) {
-					startTime = tweet.getPublishedTime();
-					nextUpdateTime = startTime + Configure.TIME_STEP_WIDTH;
-					return;
-				}
-			}
-			System.out.println("something wrong!!! lastTweet not found in stream");
-			System.exit(-1);
-		} else {
-			startTime = lastTweet.getPublishedTime();
-			nextUpdateTime = startTime + Configure.TIME_STEP_WIDTH;
-		}
+		// lastTweet.print("last tweet");
+		/*
+		 * if (lastTweet.getPublishedTime() < 0) { Tweet tweet = null; while
+		 * ((tweet = stream.getTweet()) != null) { if
+		 * (tweet.getTweetId().equals(lastTweet.getTweetId())) { startTime =
+		 * tweet.getPublishedTime(); nextUpdateTime = startTime +
+		 * Configure.TIME_STEP_WIDTH; return; } } System.out.println(
+		 * "something wrong!!! lastTweet not found in stream"); System.exit(-1);
+		 * } else { startTime = lastTweet.getPublishedTime(); nextUpdateTime =
+		 * startTime + Configure.TIME_STEP_WIDTH; }
+		 */
+		startTime = stream.getTweet().getPublishedTime();
+		nextUpdateTime = startTime + Configure.TIME_STEP_WIDTH;
 	}
 
 	/**
@@ -54,7 +51,7 @@ public abstract class FilteringModel {
 	protected boolean isInvalidTweet(Tweet tweet) {
 		if (tweet.getPublishedTime() < startTime) {
 			return true;
-		}		
+		}
 		if (tweet.getTerms(preprocessingUtils).size() == 0) {
 			return true;
 		}

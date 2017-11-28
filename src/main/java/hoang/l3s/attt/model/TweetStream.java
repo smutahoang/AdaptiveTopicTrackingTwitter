@@ -59,12 +59,21 @@ public class TweetStream {
 		preEventStreamTweetId = null;
 		System.out.println("read first tweet in main stream");
 		currentMainStreamTweet = readMainStream();
+		shift = -1;
 	}
 
-	public void mixEventStream(String _eventStreamPath) {
+	public void mixEventStream(String _eventStreamPath, int _nSkipTweets) {
 		try {
 			eventStreamPath = _eventStreamPath;
 			eventStreamReader = new BufferedReader(new FileReader(eventStreamPath));
+			// skip first relevant tweets
+			while (_nSkipTweets > 0) {
+				currentEventStreamTweet = readEventStream();
+				if (currentEventStreamTweet.getIsRelevant()) {
+					_nSkipTweets--;
+				}
+			}
+			// first event tweet to be filtered
 			currentEventStreamTweet = readEventStream();
 			System.out.println("determining shift");
 			shift = Long.parseLong(currentMainStreamTweet.getTweetId())
@@ -244,4 +253,7 @@ public class TweetStream {
 		}
 	}
 
+	public long getShift() {
+		return shift;
+	}
 }

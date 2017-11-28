@@ -21,6 +21,10 @@ public class Configure {
 		STUPID_BACKOFF, JELINEK_MERCER, BAYESIAN, ABSOLUTE_DISCOUNTING, NO_SMOOTHING
 	}
 
+	public enum KEYWORD_ADAPTATION {
+		TOP_IMPORTANT, EXPANSION
+	}
+
 	public final static Author AUTHOR = Author.HOANG;
 	public final static boolean runningOnLocal = false;
 
@@ -53,14 +57,22 @@ public class Configure {
 	// constants for pseudo supervised model
 	public static String RELEVANT_CLASS = "RELEVANT";
 	public static String NONRELEVANT_CLASS = "NONRELEVANT";
-	public static int NUMBER_EXCLUSION_TERMS = 200;
+	public static int NUMBER_EXCLUSION_TERMS = 100;
 	public static int NONRELEVANT_TWEET_SAMPLING_RATIO = 10;
 	public static double OLD_RELEVANT_TWEET_REMOVING_RATIO = 0.05;
+	public static int MIN_NUMBER_TWEET_ATTRIBUTE = 3;
+	public static int MAX_NUMBER_TERM_ATTRIBUTE = 500;
 	public static String MISSING_ATTRIBUTE = "[[MISS_ATTRIBUTE]]";
 	public static String CLASS_ATTRIBUTE = "[[CLASS_ATTRIBUTE]]";
 	public static String PROBLEM_NAME = "TWEET_CLASSIFICATION";
 	public static int NUMBER_OLD_TWEET_REMOVING_WINDOW = 1;
 	public static boolean USE_NEGATIVE_TWEET_FEATURE_SELECTION = false;
+	public static int MAX_NUMBER_NONRELEVANT_TWEET = 10000;
+	public static int MAX_NUMBER_RELEVANT_TWEET = 5000;
+
+	// constants for keyword based model
+	public final static int NUMBER_IMPORTANT_TERMS = 5;
+	public final static double SIMILARITY_THRESHOLD = 0.8;
 
 	public static String WORKING_DIRECTORY;
 	public static String STOPWORD_PATH;

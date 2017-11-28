@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import hoang.l3s.attt.model.graphbased.AdjacentTerm;
+import hoang.l3s.attt.utils.graph.AdjacentTerm;
 
 public class RankingUtils {
 
@@ -39,6 +39,29 @@ public class RankingUtils {
 		for (Map.Entry<String, Double> tfIdfTermsIter : tfIdfTermsMap.entrySet()) {
 			String term = tfIdfTermsIter.getKey();
 			Double tfIdfTerm = tfIdfTermsIter.getValue();
+			if (queue.size() < k) {
+				queue.add(new KeyValue_Pair(term, tfIdfTerm));
+			} else {
+				KeyValue_Pair head = queue.peek();
+				if (head.getDoubleValue() < tfIdfTerm) {
+					queue.poll();
+					queue.add(new KeyValue_Pair(term, tfIdfTerm));
+				}
+			}
+		}
+
+		HashSet<String> topTfIdfTerms = new HashSet<String>();
+		while (!queue.isEmpty()) {
+			topTfIdfTerms.add(queue.poll().getStrKey());
+		}
+		return topTfIdfTerms;
+	}
+
+	public static HashSet<String> getTopKFrequentTerms(int k, HashMap<String, Integer> tfTermsMap) {
+		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
+		for (Map.Entry<String, Integer> tfIdfTermsIter : tfTermsMap.entrySet()) {
+			String term = tfIdfTermsIter.getKey();
+			int tfIdfTerm = tfIdfTermsIter.getValue();
 			if (queue.size() < k) {
 				queue.add(new KeyValue_Pair(term, tfIdfTerm));
 			} else {

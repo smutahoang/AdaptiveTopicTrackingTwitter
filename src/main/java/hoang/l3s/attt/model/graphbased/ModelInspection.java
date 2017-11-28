@@ -11,6 +11,7 @@ import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
+import hoang.l3s.attt.utils.graph.TermGraph;
 
 public class ModelInspection {
 	public static void getTopTerms(int endTimeStep, String prefix) {

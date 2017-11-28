@@ -12,6 +12,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import hoang.l3s.attt.configure.Configure;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.KeyValue_Pair;
+import hoang.l3s.attt.utils.RankingUtils;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import weka.classifiers.functions.SMO;
 import weka.core.Attribute;
@@ -30,6 +31,7 @@ public class Classifier {
 	private TweetPreprocessingUtils preprocessingUtils;
 	private ArrayList<Attribute> attributes;
 	private ArrayList<Instance> instances;
+
 	private SMO svm;
 
 	private HashMap<String, Integer> attribute2Index;
@@ -42,14 +44,17 @@ public class Classifier {
 	}
 
 	public Classifier(List<Tweet> positiveSamples, List<Tweet> negativeSamples,
-			TweetPreprocessingUtils _preprocessingUtils) {
+			HashMap<String, Integer> termRelevantTweetCount, TweetPreprocessingUtils _preprocessingUtils) {
 		System.out.println("(Re-) training a classifer");
+		System.out.printf(" ---- #relevant tweets = %d  #non-relevant tweets = %d\n", positiveSamples.size(),
+				negativeSamples.size());
 		// utility variables
 		indiceSet = new HashSet<Integer>();
 
 		preprocessingUtils = _preprocessingUtils;
 
-		attributes = featureSelection(positiveSamples, negativeSamples);
+		// attributes = featureSelection(positiveSamples, negativeSamples);
+		attributes = featureSelection(termRelevantTweetCount);
 
 		instances = getListOfInstances(positiveSamples, negativeSamples);
 
@@ -141,7 +146,7 @@ public class Classifier {
 	}
 
 	// get list of features
-	public ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
+	private ArrayList<Attribute> featureSelection(List<Tweet> positiveSamples, List<Tweet> negativeSamples) {
 
 		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
 		attribute2Index = new HashMap<String, Integer>();
@@ -198,6 +203,46 @@ public class Classifier {
 		return attributes;
 	}
 
+	private ArrayList<Attribute> featureSelection(HashMap<String, Integer> termRelevantTweetCount) {
+
+		ArrayList<Attribute> attributes = new ArrayList<Attribute>();
+		attribute2Index = new HashMap<String, Integer>();
+		int attributeIndex = 0;
+
+		for (Map.Entry<String, Integer> pair : termRelevantTweetCount.entrySet()) {
+			if (pair.getValue() <= Configure.MIN_NUMBER_TWEET_ATTRIBUTE)
+				continue;
+			String term = pair.getKey();
+			attributes.add(new Attribute(term, attributeIndex));
+			attribute2Index.put(term, attributeIndex);
+			attributeIndex++;
+		}
+
+		/*
+		 * HashSet<String> frequentTerms =
+		 * RankingUtils.getTopKFrequentTerms(Configure.
+		 * MAX_NUMBER_TERM_ATTRIBUTE, termRelevantTweetCount); for (String term
+		 * : frequentTerms) { attributes.add(new Attribute(term,
+		 * attributeIndex)); attribute2Index.put(term, attributeIndex);
+		 * attributeIndex++; }
+		 */
+
+		attributes.add(new Attribute(Configure.MISSING_ATTRIBUTE, attributeIndex));
+		attribute2Index.put(Configure.MISSING_ATTRIBUTE, attributeIndex);
+		attributeIndex++;
+
+		ArrayList<String> classAtt = new ArrayList<String>();
+
+		classAtt.add(Configure.NONRELEVANT_CLASS);
+		classAtt.add(Configure.RELEVANT_CLASS);
+
+		attributes.add(new Attribute(Configure.CLASS_ATTRIBUTE, classAtt, attributeIndex));
+
+		attribute2Index.put(Configure.CLASS_ATTRIBUTE, attributeIndex);
+
+		return attributes;
+	}
+
 	public Instance getSparseInstance(Tweet tweet) {
 		List<String> termsofTweet = tweet.getTerms(preprocessingUtils);
 
@@ -231,8 +276,9 @@ public class Classifier {
 	// get class of a new instance
 	public String classify(Tweet tweet) {
 
-		System.out.printf("\n[Classification] tweet = %s\n", tweet.getText().replace('\n', ' '));
-		String result = "";
+		// System.out.printf("\n[Classification] tweet = %s\n",
+		// tweet.getText().replace('\n', ' '));
+		String result = null;
 		Instances test = new Instances(Configure.PROBLEM_NAME, attributes, 1);
 		test.setClassIndex(attributes.size() - 1);
 
@@ -252,7 +298,7 @@ public class Classifier {
 			e.printStackTrace();
 			System.exit(-1);// this means v is not 0 or 1
 		}
-		System.out.printf("result = [[%s]]\n", result);
+		// System.out.printf("result = [[%s]]\n", result);
 		return result;
 	}
 

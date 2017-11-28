@@ -5,6 +5,7 @@ public class KeyValue_Pair implements Comparable<KeyValue_Pair> {
 	private String strKey;
 	private double doubleValue;
 	private String strValue;
+	private int intValue;
 
 	private enum ValueType {
 		intType, doubleType
@@ -24,6 +25,12 @@ public class KeyValue_Pair implements Comparable<KeyValue_Pair> {
 		valueType = ValueType.doubleType;
 	}
 
+	public KeyValue_Pair(String _strKey, int _intValue) {
+		strKey = _strKey;
+		intValue = _intValue;
+		valueType = ValueType.intType;
+	}
+
 	public int getIntKey() {
 		return intKey;
 	}
@@ -40,11 +47,21 @@ public class KeyValue_Pair implements Comparable<KeyValue_Pair> {
 		return strValue;
 	}
 
+	public int getIntValue() {
+		return intValue;
+	}
+
 	public int compareTo(KeyValue_Pair o) {
 		if (valueType == ValueType.doubleType) {
 			if (o.getDoubleValue() > doubleValue)
 				return -1;
 			if (o.getDoubleValue() < doubleValue)
+				return 1;
+			return 0;
+		} else if (valueType == ValueType.intType) {
+			if (o.getIntValue() > intValue)
+				return -1;
+			if (o.getIntValue() < intValue)
 				return 1;
 			return 0;
 		} else {

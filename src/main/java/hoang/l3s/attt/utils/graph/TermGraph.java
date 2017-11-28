@@ -1,4 +1,4 @@
-package hoang.l3s.attt.model.graphbased;
+package hoang.l3s.attt.utils.graph;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -18,6 +18,7 @@ import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.utils.TweetPreprocessingUtils;
 import hoang.l3s.attt.utils.KeyValue_Pair;
 import hoang.l3s.attt.utils.RankingUtils;
+import hoang.l3s.attt.utils.SimilarityUtils;
 
 public class TermGraph {
 	String[] strTerms;
@@ -36,7 +37,7 @@ public class TermGraph {
 	private final int MAX_NUMBER_TERMS = 1000000;
 
 	private boolean verbose = false;
-	private boolean simpleKeywordMatch = false;
+	private boolean predefineKeywordMatch = false;
 	private boolean simpleTermImportance = true;
 	private boolean keytermFlag = true;
 
@@ -48,7 +49,8 @@ public class TermGraph {
 	private int[] termIndexes;// temp array of index a tweet' terms in
 								// term2Index map
 
-	private HashSet<Integer> keyTerms;
+	private HashSet<Integer> topImportantTerms;// pagerank
+	private HashSet<Integer> keyTerms;// pagerank - idf
 
 	/***
 	 * initialize variables
@@ -375,6 +377,33 @@ public class TermGraph {
 
 	}
 
+	public void updateImportantTerms() {
+		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
+		int nTerms = adjList.size();
+		for (int i = 0; i < nTerms; i++) {
+			Term term = adjList.get(i);
+			if (term == null) {
+				continue;
+			}
+			double s = term.getImportance();
+			if (queue.size() < Configure.NUMBER_IMPORTANT_TERMS) {
+				queue.add(new KeyValue_Pair(i, s));
+			} else {
+				KeyValue_Pair head = queue.peek();
+				if (head.getDoubleValue() < s) {
+					queue.poll();
+					queue.add(new KeyValue_Pair(i, s));
+				}
+			}
+		}
+
+		topImportantTerms = new HashSet<Integer>();
+		while (!queue.isEmpty()) {
+			topImportantTerms.add(queue.poll().getIntKey());
+		}
+
+	}
+
 	/***
 	 * compute importance of terms
 	 */
@@ -461,7 +490,7 @@ public class TermGraph {
 	 * @param tweet
 	 * @return
 	 */
-	private boolean keywordMatch(String tweet) {
+	private boolean predefineKeywordMatch(String tweet) {
 		if (tweet.contains("travel ban"))
 			return true;
 		if (tweet.contains("muslim ban"))
@@ -480,8 +509,8 @@ public class TermGraph {
 	 * @return
 	 */
 	public double getScore(Tweet tweet, TweetPreprocessingUtils preprocessingUtils) {
-		if (simpleKeywordMatch) {
-			if (keywordMatch(tweet.getText().toLowerCase()))
+		if (predefineKeywordMatch) {
+			if (predefineKeywordMatch(tweet.getText().toLowerCase()))
 				return 1;
 			return 0;
 		}
@@ -550,6 +579,25 @@ public class TermGraph {
 		}
 		return score;
 
+	}
+
+	/***
+	 * check if the tweet contain some important term
+	 * 
+	 * @param tweet
+	 * @return
+	 */
+	public boolean containImportantTerm(Tweet tweet, TweetPreprocessingUtils preprocessingUtils) {
+
+		List<String> terms = tweet.getTerms(preprocessingUtils);
+		int nTerms = terms.size();
+		for (int i = 0; i < nTerms; i++) {
+			termIndexes[i] = getTermIndex(terms.get(i));
+			if (topImportantTerms.contains(termIndexes[i])) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/***
@@ -658,6 +706,35 @@ public class TermGraph {
 
 	}
 
+	public void saveImportantTermToFile(String filename) {
+		try {
+			BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+			for (int i : topImportantTerms) {
+				Term term = adjList.get(i);
+				if (term == null) {
+					continue;
+				}
+				double s = term.getImportance();
+				double r = ((double) term.getNRelevantTweets()) / term.getNAllTweets();
+				s *= Math.log(1 + r);
+				bw.write(String.format("[[%s]],%f,%f\n", strTerms[i], term.getImportance(), s));
+			}
+			bw.close();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
+
+	}
+
+	/***
+	 * load graph from files
+	 * 
+	 * @param termfile
+	 * @param graphfile
+	 * @param time
+	 */
 	public TermGraph(String termfile, String graphfile, int time) {
 		try {
 			init();
@@ -717,4 +794,78 @@ public class TermGraph {
 		}
 	}
 
+	private HashMap<Integer, Double> getTFIDF(int p) {
+		Term term = adjList.get(p);
+		HashSet<Integer> q = new HashSet<Integer>();
+		HashMap<Integer, Double> tfIdf = new HashMap<Integer, Double>();
+		for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getOutTerms().entrySet()) {
+			int j = adjTermIter.getKey();
+			AdjacentTerm adjTerm = adjTermIter.getValue();
+			tfIdf.put(j, adjTerm.getWeight());
+			q.add(j);
+		}
+
+		for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getInTerms().entrySet()) {
+			int j = adjTermIter.getKey();
+			AdjacentTerm adjTerm = adjTermIter.getValue();
+			if (tfIdf.containsKey(j)) {
+				tfIdf.put(j, adjTerm.getWeight() + tfIdf.get(j));
+			} else {
+				tfIdf.put(j, adjTerm.getWeight());
+			}
+			q.add(j);
+		}
+		for (int j : q) {
+			double w = tfIdf.get(j) * Math.log(((double) nActiveTerms) / adjList.get(j).nAdjTerms());
+			tfIdf.put(j, w);
+		}
+		return tfIdf;
+	}
+
+	public void expandImportantTerms() {
+		HashSet<Integer> newImportantTerms = new HashSet<Integer>();
+		HashMap<Integer, HashMap<Integer, Double>> tfIdfVector = new HashMap<Integer, HashMap<Integer, Double>>();
+		for (int p : topImportantTerms) {
+			if (adjList.get(p) == null)
+				continue;
+			if (!tfIdfVector.containsKey(p)) {
+				tfIdfVector.put(p, getTFIDF(p));
+			}
+			// common terms
+			Term term = adjList.get(p);
+			HashSet<Integer> commonAdjTerms = new HashSet<Integer>();
+			for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getOutTerms().entrySet()) {
+				int j = adjTermIter.getKey();
+				commonAdjTerms.add(j);
+			}
+			for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getInTerms().entrySet()) {
+				int j = adjTermIter.getKey();
+				commonAdjTerms.add(j);
+			}
+			// candidates
+			HashSet<Integer> candidates = new HashSet<Integer>();
+			for (int q : commonAdjTerms) {
+				term = adjList.get(q);
+				for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getOutTerms().entrySet()) {
+					int j = adjTermIter.getKey();
+					candidates.add(j);
+				}
+				for (Map.Entry<Integer, AdjacentTerm> adjTermIter : term.getInTerms().entrySet()) {
+					int j = adjTermIter.getKey();
+					candidates.add(j);
+				}
+			}
+			// expand
+			for (int q : candidates) {
+				if (!tfIdfVector.containsKey(q)) {
+					tfIdfVector.put(q, getTFIDF(q));
+				}
+				if (SimilarityUtils.cosineSimilarity(tfIdfVector.get(p),
+						tfIdfVector.get(q)) >= Configure.SIMILARITY_THRESHOLD) {
+					newImportantTerms.add(q);
+				}
+			}
+		}
+		topImportantTerms.addAll(newImportantTerms);
+	}
 }

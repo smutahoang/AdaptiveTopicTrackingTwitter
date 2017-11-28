@@ -1,4 +1,4 @@
-package hoang.l3s.attt.model.graphbased;
+package hoang.l3s.attt.utils.graph;
 
 public class AdjacentTerm {
 	private double weight;

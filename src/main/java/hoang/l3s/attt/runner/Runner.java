@@ -17,6 +17,7 @@ import hoang.l3s.attt.model.FilteringModel;
 import hoang.l3s.attt.model.Tweet;
 import hoang.l3s.attt.model.TweetStream;
 import hoang.l3s.attt.model.graphbased.GraphBasedFilter;
+import hoang.l3s.attt.model.keywordbased.KeywordBasedFilter;
 import hoang.l3s.attt.model.languagemodel.LanguageModelBasedFilter;
 import hoang.l3s.attt.model.pseudosupervised.PseudoSupervisedFilter;
 
@@ -96,14 +97,10 @@ public class Runner {
 			String line = null;
 			while ((line = br.readLine()) != null) {
 				JsonObject jsonTweet = (JsonObject) jsonParser.parse(line);
-				// to get english tweet without delete tweet, the count is 105
-				{
-					if (jsonTweet.has("delete"))
-						continue;
-
-					if (!jsonTweet.get("lang").toString().equals("\"en\""))
-						continue;
-				}
+				if (jsonTweet.has("delete"))
+					continue;
+				if (!jsonTweet.get("lang").toString().equals("\"en\""))
+					continue;
 				System.out.printf("time = |%s|\n", jsonTweet.get("created_at").getAsString());
 				long createdAt = dateTimeFormater.parse(jsonTweet.get("created_at").getAsString()).getTime();
 				Tweet tweet = new Tweet(jsonTweet.get("id_str").getAsString(), jsonTweet.get("text").getAsString(),
@@ -118,6 +115,17 @@ public class Runner {
 			System.exit(-1);
 		}
 		return null;
+	}
+
+	static LinkedList<Tweet> getTweetsInWindow(TweetStream stream, long windowWidth) {
+		LinkedList<Tweet> tweetsInWindow = new LinkedList<Tweet>();
+		Tweet tweet = stream.getTweet();
+		long endTime = tweet.getPublishedTime() + windowWidth;
+		while (tweet.getPublishedTime() <= endTime) {
+			tweetsInWindow.add(tweet);
+			tweet = stream.getTweet();
+		}
+		return tweetsInWindow;
 	}
 
 	static void graphFilter(String[] args) {
@@ -138,7 +146,7 @@ public class Runner {
 			long endTime = dateFormat.parse(startDate).getTime() + 7 * 24 * 60 * 60 * 1000;
 
 			FilteringModel filteringModel = new GraphBasedFilter(dataset, recentRelevantTweets, recentTweets, stream,
-					endTime, outputPath);
+					endTime, outputPath, "");
 			filteringModel.filter();
 
 		} catch (Exception e) {
@@ -180,8 +188,8 @@ public class Runner {
 			LinkedList<Tweet> recentTweets = getTweetsInWindow(windowTweetsPath);
 			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 			TweetStream stream = new TweetStream(streamPath, dateFormat.parse(startDate));
-			FilteringModel filter = new PseudoSupervisedFilter(dataset, recentRelevantTweets, recentTweets, stream,
-					outputPath);
+			FilteringModel filter = new PseudoSupervisedFilter(dataset, recentRelevantTweets, recentTweets, stream, 0,
+					outputPath, null);
 			filter.filter();
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
@@ -191,11 +199,45 @@ public class Runner {
 
 	static void crisis() {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-		String startDate = "2017-01-28";
+		List<String> startDate = new ArrayList<String>();
+		List<String> streamPath = new ArrayList<String>();
 
-		String windowTweetsPath = "/home/hoang/attt/data/firstWindow/travel_ban.txt";
-		LinkedList<Tweet> recentTweets = getTweetsInWindow(windowTweetsPath);
-		String streamPath = "/home/hoang/attt/data/travel_ban";
+		// *******
+		startDate.add("2017-01-27");
+		streamPath.add("/home/hoang/attt/data/travel_ban");
+		startDate.add("2017-03-01");
+		streamPath.add("/home/hoang/attt/data/2017mar");
+		startDate.add("2017-04-01");
+		streamPath.add("/home/hoang/attt/data/2017apr");
+		// *******
+		startDate.add("2017-01-28");
+		streamPath.add("/home/hoang/attt/data/travel_ban");
+		startDate.add("2017-03-02");
+		streamPath.add("/home/hoang/attt/data/2017mar");
+		startDate.add("2017-04-02");
+		streamPath.add("/home/hoang/attt/data/2017apr");
+		// *******
+		startDate.add("2017-01-29");
+		streamPath.add("/home/hoang/attt/data/travel_ban");
+		startDate.add("2017-03-03");
+		streamPath.add("/home/hoang/attt/data/2017mar");
+		startDate.add("2017-04-03");
+		streamPath.add("/home/hoang/attt/data/2017apr");
+		// *******
+		startDate.add("2017-01-30");
+		streamPath.add("/home/hoang/attt/data/travel_ban");
+		startDate.add("2017-03-04");
+		streamPath.add("/home/hoang/attt/data/2017mar");
+		startDate.add("2017-04-04");
+		streamPath.add("/home/hoang/attt/data/2017apr");
+		// *******
+		startDate.add("2017-01-31");
+		streamPath.add("/home/hoang/attt/data/travel_ban");
+		startDate.add("2017-03-05");
+		streamPath.add("/home/hoang/attt/data/2017mar");
+		startDate.add("2017-04-05");
+		streamPath.add("/home/hoang/attt/data/2017apr");
+
 		String rootOutputPath = "/home/hoang/attt/output";
 
 		List<String> datasets = new ArrayList<String>();
@@ -227,35 +269,130 @@ public class Runner {
 		nTrackingDays.add(11);
 
 		try {
+			for (int d = 0; d < startDate.size(); d++) {
+				// for (int i = 0; i < datasets.size(); i++) {
+				for (int i = 0; i < 2; i++) {
+					System.out.println("getting first relevant tweets");
+					List<Tweet> recentRelevantTweets = getCrisisTweets(String
+							.format("/home/hoang/attt/data/crisis/odered/%s-ontopic_offtopic.csv", datasets.get(i)),
+							nFirstTweets.get(i));
 
-			for (int i = 0; i < datasets.size(); i++) {
-				List<Tweet> recentRelevantTweets = getCrisisTweets(
-						String.format("/home/hoang/attt/data/crisis/odered/%s-ontopic_offtopic.csv", datasets.get(i)),
-						nFirstTweets.get(i));
+					System.out.println("initializing carrier stream");
+					TweetStream stream = new TweetStream(streamPath.get(d), dateFormat.parse(startDate.get(d)));
+
+					System.out.println("getting recent tweets");
+					long windowWidth = 60 * 60 * 1000;// 30mins
+					LinkedList<Tweet> recentTweets = getTweetsInWindow(stream, windowWidth);
+					System.out.printf(" --- #recent tweets = %d\n", recentTweets.size());
+
+					System.out.println("mixing with event stream");
+					String eventStreamPath = String
+							.format("/home/hoang/attt/data/crisis/odered/%s-ontopic_offtopic.csv", datasets.get(i));
+					stream.mixEventStream(eventStreamPath, nFirstTweets.get(i));
+
+					System.out.println("initializing filter");
+
+					long endTime = dateFormat.parse(startDate.get(d)).getTime()
+							+ nTrackingDays.get(i) * 24 * 60 * 60 * 1000 + windowWidth;
+					String outputPrefix = startDate.get(d);
+
+					/*
+					 * long endTime =
+					 * dateFormat.parse(startDate.get(d)).getTime() +
+					 * nTrackingDays.get(i) * 60 * 60 * 1000 + windowWidth;
+					 */
+
+					/*
+					 * String outputPath = String.format("%s/pseudo_supervised",
+					 * rootOutputPath, datasets.get(i)); FilteringModel filter =
+					 * new PseudoSupervisedFilter(datasets.get(i),
+					 * recentRelevantTweets, recentTweets, stream, endTime,
+					 * outputPath, outputPrefix);
+					 */
+
+					String outputPath = String.format("%s/keyword_expansion", rootOutputPath, datasets.get(i));
+					Configure.KEYWORD_ADAPTATION kwAdaptation = Configure.KEYWORD_ADAPTATION.EXPANSION;
+					KeywordBasedFilter filter = new KeywordBasedFilter(datasets.get(i), recentRelevantTweets,
+							recentTweets, kwAdaptation, stream, endTime, outputPath, outputPrefix);
+
+					// int nGram = 1;
+					// LanguageModelBasedFilter filter = new
+					// LanguageModelBasedFilter(nGram);
+
+					// String outputPath = String.format("%s/graph",
+					// rootOutputPath);
+					// FilteringModel filter = new
+					// GraphBasedFilter(datasets.get(i), recentRelevantTweets,
+					// recentTweets,
+					// stream, endTime, outputPath, outputPrefix);
+					System.out.println("filtering");
+					filter.filter();
+				}
+			}
+
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	static void testStreamMixing() {
+		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		String startDate = "2017-01-28";
+
+		String streamPath = "/home/hoang/attt/data/travel_ban";
+
+		List<String> datasets = new ArrayList<String>();
+		List<Integer> nFirstTweets = new ArrayList<Integer>();
+		List<Integer> nTrackingDays = new ArrayList<Integer>();
+		// 3-day event
+		datasets.add("2012_Sandy_Hurricane");
+		nFirstTweets.add(50);
+		nTrackingDays.add(3);
+		// 5-day event
+		datasets.add("2013_Boston_Bombings");
+		nFirstTweets.add(75);
+		nTrackingDays.add(5);
+		// 6-day event
+		datasets.add("2013_Queensland_Floods");
+		nFirstTweets.add(100);
+		nTrackingDays.add(6);
+		// 11-day event
+		datasets.add("2013_Alberta_Floods");
+		nFirstTweets.add(200);
+		nTrackingDays.add(11);
+		// 11-day event
+		datasets.add("2013_Oklahoma_Tornado");
+		nFirstTweets.add(200);
+		nTrackingDays.add(11);
+		// 11-day event
+		datasets.add("2013_West_Texas_Explosion");
+		nFirstTweets.add(200);
+		nTrackingDays.add(11);
+
+		try {
+			for (int i = 0; i < 1; i++) {
+
 				System.out.println("initializing stream");
 				String eventStreamPath = String.format("/home/hoang/attt/data/crisis/odered/%s-ontopic_offtopic.csv",
 						datasets.get(i));
 
-				long endTime = dateFormat.parse(startDate).getTime() + nTrackingDays.get(i) * 24 * 60 * 60 * 1000;
-				TweetStream stream = new TweetStream(streamPath, eventStreamPath, dateFormat.parse(startDate));
-
-				System.out.println("initializing filter");
-				// String outputPath = String.format("%s/pseudo_supervised",
-				// rootOutputPath, datasets.get(i));
-				// FilteringModel filter = new
-				// PseudoSupervisedFilter(datasets.get(i), recentRelevantTweets,
-				// recentTweets,
-				// stream, outputPath);
-
-				// int nGram = 1;
-				// LanguageModelBasedFilter filter = new
-				// LanguageModelBasedFilter(nGram);
-
-				String outputPath = String.format("%s/graph", rootOutputPath);
-				FilteringModel filter = new GraphBasedFilter(datasets.get(i), recentRelevantTweets, recentTweets,
-						stream, endTime, outputPath);
-				System.out.println("filtering");
-				filter.filter();
+				TweetStream stream = new TweetStream(streamPath, dateFormat.parse(startDate));
+				for (int j = 0; j < 10; j++) {
+					Tweet tweet = stream.getTweet();
+					System.out.println(String.format("%s\t%s\t%d\t%s\t%s\t%s\n", tweet.getTweetId(),
+							tweet.getAlignedTweet(), stream.getShift(), tweet.getPublishedTime(), tweet.getUser(),
+							tweet.getText().replace('\n', ' ').replace('\r', ' ')));
+				}
+				stream.mixEventStream(eventStreamPath, nFirstTweets.get(i));
+				long endTime = dateFormat.parse(startDate).getTime() + 1 * 1 * 60 * 60 * 1000;
+				Tweet tweet = stream.getTweet();
+				while (tweet.getPublishedTime() < endTime) {
+					System.out.println(String.format("%s\t%s\t%d\t%s\t%s\t%s\n", tweet.getTweetId(),
+							tweet.getAlignedTweet(), stream.getShift(), tweet.getPublishedTime(), tweet.getUser(),
+							tweet.getText().replace('\n', ' ').replace('\r', ' ')));
+					tweet = stream.getTweet();
+				}
 			}
 
 		} catch (ParseException e) {
@@ -282,6 +419,7 @@ public class Runner {
 
 		switch (Configure.AUTHOR) {
 		case HOANG:
+			// testStreamMixing();
 			// graphFilter(args);
 			// lmFilter(args);
 			// pseudoSupervisedFilter();
