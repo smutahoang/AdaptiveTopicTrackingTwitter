@@ -7,6 +7,32 @@ import java.util.Map;
 import hoang.l3s.attt.evaluation.Tweet;
 
 public class SimilarityUtils {
+	public static double getTweetSimilarity(Tweet tweetA, Tweet tweetB) {
+		HashSet<Integer> A_terms = new HashSet<Integer>();
+		double denominator = 0;
+		for (int i = 0; i < tweetA.words.length; i++) {
+			if (A_terms.contains(tweetA.words[i]))
+				continue;
+			A_terms.add(tweetA.words[i]);
+			denominator += 1;
+		}
+
+		HashSet<Integer> B_terms = new HashSet<Integer>();
+		double numerator = 0;
+		for (int i = 0; i < tweetB.words.length; i++) {
+			if (B_terms.contains(tweetB.words[i]))
+				continue;
+			B_terms.add(tweetB.words[i]);
+			if (A_terms.contains(tweetB.words[i])) {
+				numerator += 1;
+			} else {
+				denominator += 1;
+			}
+		}
+
+		return numerator / denominator;
+	}
+
 	public static double getTweetSimilarity(Tweet tweetA, Tweet tweetB, double[] weights) {
 		HashSet<Integer> A_terms = new HashSet<Integer>();
 		double denominator = 0;
@@ -23,7 +49,7 @@ public class SimilarityUtils {
 			if (B_terms.contains(tweetB.words[i]))
 				continue;
 			B_terms.add(tweetB.words[i]);
-			if (A_terms.add(tweetB.words[i])) {
+			if (A_terms.contains(tweetB.words[i])) {
 				numerator += weights[tweetB.words[i]];
 			} else {
 				denominator += weights[tweetB.words[i]];
@@ -51,4 +77,38 @@ public class SimilarityUtils {
 		}
 		return product / Math.sqrt(pnorm * qnorm);
 	}
+
+	public static double klDistance(HashMap<String, Double> p, HashMap<String, Double> q) {
+		double d = 0;
+		for (Map.Entry<String, Double> pair : p.entrySet()) {
+			double val = pair.getValue();
+			d += val * Math.log(val / q.get(pair.getKey()));
+		}
+		return d;
+	}
+
+	public static double jsDistance(HashMap<String, Double> p, HashMap<String, Double> q) {
+		// System.out.printf("p.size = %d q.size = %d\n", p.size(), q.size());
+		HashMap<String, Double> mean = new HashMap<String, Double>();
+		for (Map.Entry<String, Double> pair : p.entrySet()) {
+			double val = pair.getValue();
+			String key = pair.getKey();
+			if (q.containsKey(key)) {
+				mean.put(key, (val + q.get(key)) / 2);
+			} else {
+				mean.put(key, val / 2);
+			}
+		}
+		for (Map.Entry<String, Double> pair : q.entrySet()) {
+			String key = pair.getKey();
+			if (p.containsKey(key)) {
+				continue;
+			}
+			double val = pair.getValue();
+			mean.put(key, val / 2);
+		}
+
+		return (klDistance(p, mean) + klDistance(q, mean)) / 2;
+	}
+
 }

@@ -83,6 +83,8 @@ public class ResultSummary {
 	static void getHTMLFiles(int nTopics, int nTopWords, int nTopTweets, String inputPath, String outputPath) {
 		try {
 			for (int z = 0; z < nTopics; z++) {
+				System.out.printf("\t\t: topic = %d\n", z);
+
 				String htmlFilename = String.format("%s/%d.html", outputPath, z);
 				BufferedWriter bw = new BufferedWriter(new FileWriter(htmlFilename));
 				bw.write(String.format("<p><b><font color=\"red\">TOPIC-%d</font></b></p>\n", z));
@@ -101,7 +103,7 @@ public class ResultSummary {
 					bw.write(String.format("%s (%s)", tokens[0], tokens[1]));
 					for (int i = 1; i < nTopWords; i++) {
 						line = br.readLine();
-						System.out.printf("i = %d line = %s\n", i, line);
+						// System.out.printf("i = %d line = %s\n", i, line);
 						tokens = line.split(",");
 						bw.write(String.format(", %s (%s)", tokens[0], tokens[1]));
 					}
@@ -110,6 +112,9 @@ public class ResultSummary {
 				}
 				br.close();
 
+				// String topTweetFilename =
+				// String.format("%s/tweetTopicTopTweetsBySumProbUniqueWords.csv",
+				// inputPath);
 				String topTweetFilename = String.format("%s/tweetTopicRepresentativeTweets.csv", inputPath);
 				br = new BufferedReader(new FileReader(topTweetFilename));
 				line = null;
@@ -119,12 +124,19 @@ public class ResultSummary {
 					bw.write("<p><b>TOP TWEETS</b></p>\n");
 					for (int i = 0; i < nTopTweets; i++) {
 						line = br.readLine();
+						if (line == null) {
+							break;
+						}
+						if (line.startsWith("***[[TOPIC")) {
+							break;
+						}
 						String[] tokens = line.split("\t");
+						// String[] tokens = line.split(",");
 						bw.write(String.format("<p>%s", tokens[1]));
-						/*
-						 * for (int j = 3; j < tokens.length; j++) {
-						 * bw.write(String.format(", %s", tokens[j])); }
-						 */
+						// bw.write(String.format("<p>%s", tokens[2]));
+						// for (int j = 3; j < tokens.length; j++) {
+						// bw.write(String.format(", %s", tokens[j]));
+						// }
 						bw.write("</p>\n");
 
 					}
@@ -150,6 +162,17 @@ public class ResultSummary {
 	public static void main(String[] args) {
 		// getTopTerms(20, "C:/Users/Tuan-Anh Hoang/Desktop/attt/terms", 1,
 		// 288);
-		getHTMLFiles(20, 20, 20, "C:/Users/Tuan-Anh Hoang/Desktop/attt", "C:/Users/Tuan-Anh Hoang/Desktop/attt/html");
+		String[] models = new String[] { "kw", "ps", "graph" };
+		int[] nTopics = new int[] { 10, 20, 30 };
+		for (int m = 0; m < 3; m++) {
+			for (int i = 0; i < 3; i++) {
+				String inputPath = String.format("C:/Users/Tuan-Anh Hoang/Desktop/attt/ua/%s/%d", models[m],
+						nTopics[i]);
+				String outputPath = String.format("C:/Users/Tuan-Anh Hoang/Desktop/attt/ua/%s/%d/html",
+						models[m], nTopics[i]);
+				System.out.printf("model = %s \t #topics = %d\n", models[m], nTopics[i]);
+				getHTMLFiles(nTopics[i], 20, 50, inputPath, outputPath);
+			}
+		}
 	}
 }

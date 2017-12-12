@@ -3,8 +3,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>hoang.l3s</groupId>
 	<!-- <artifactId>AdaptiveTopicTrackingTwitter</artifactId> -->
-	<!-- <artifactId>PseudoSupervised</artifactId> -->
-	<artifactId>Keyword</artifactId>
+	<!-- <artifactId>GraphFilter</artifactId> -->
+	<artifactId>UAScandal</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<dependencies>
 		<!-- https://mvnrepository.com/artifact/com.google.code.gson/gson -->

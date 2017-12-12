@@ -378,6 +378,17 @@ public class TermGraph {
 	}
 
 	public void updateImportantTerms() {
+
+		// System.out.printf("nActiveTerms = %d\n", nActiveTerms);
+		int k = (int) (Configure.PROPORTION_OF_KEYTERMS * nActiveTerms);
+		// System.out.printf("nKeyterms = %d\n", k);
+		if (k > maxNKeyTerms) {
+			k = maxNKeyTerms;
+		}
+		if (k < Configure.MIN_NUMBER_KEY_TERMS) {
+			k = Configure.MIN_NUMBER_KEY_TERMS;
+		}
+
 		PriorityBlockingQueue<KeyValue_Pair> queue = new PriorityBlockingQueue<KeyValue_Pair>();
 		int nTerms = adjList.size();
 		for (int i = 0; i < nTerms; i++) {
@@ -386,7 +397,7 @@ public class TermGraph {
 				continue;
 			}
 			double s = term.getImportance();
-			if (queue.size() < Configure.NUMBER_IMPORTANT_TERMS) {
+			if (queue.size() < k) {
 				queue.add(new KeyValue_Pair(i, s));
 			} else {
 				KeyValue_Pair head = queue.peek();

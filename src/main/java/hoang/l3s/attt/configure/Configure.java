@@ -44,8 +44,8 @@ public class Configure {
 	public final static int MAX_NUMBER_KEY_TERMS = 10;
 	public final static int MIN_NUMBER_KEY_TERMS = 2;
 	public final static int MIN_KEYTERM_NUMBER_TWEETS = 5;
-	public final static double MIN_RATIO_DEVIATION = 1.28;// 10 percent
-	public final static double MAX_EVENT_SCORE_DEVIATION = 1.28;
+	public final static double MIN_RATIO_DEVIATION = 0.524;// 30 percent
+	public final static double MAX_EVENT_SCORE_DEVIATION = 1.28;// 90 percent
 
 	// constants for language model
 	// public static int nGram = 1;
